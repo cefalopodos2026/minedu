@@ -27,7 +27,8 @@ export const TURNO_LABEL: Record<string, string> = {
 
 export function fechaPE(iso: string | null): string {
   if (!iso) return '—';
-  const [y, m, d] = iso.split('-');
+  // acepta "2026-10-30" y también "2026-10-30T00:00:00.000Z"
+  const [y, m, d] = iso.slice(0, 10).split('-');
   return `${d}/${m}/${y}`;
 }
 
@@ -43,9 +44,18 @@ export function waCelular(cel: string, texto?: string): string {
   return `https://wa.me/51${cel.replace(/\D/g, '')}${q}`;
 }
 
+/** Dirección exacta: vía y número + localidad / centro poblado + distrito, provincia, departamento */
+export function direccionExacta(ie: IIEE): string {
+  const partes = [ie.direccion, ie.localidad, ie.centro_poblado, ie.distrito, ie.provincia, ie.departamento]
+    .map((p) => (p ?? '').trim())
+    .filter(Boolean);
+  // quitar repeticiones (p. ej. localidad = centro poblado = distrito)
+  return partes.filter((p, i) => partes.indexOf(p) === i).join(', ');
+}
+
 const CSV_COLS: [keyof IIEE, string][] = [
   ['cod_mod', 'Código modular'], ['anexo', 'Anexo'], ['codlocal', 'Código local'], ['nombre', 'Nombre'],
-  ['nivel', 'Nivel/Modalidad'], ['forma', 'Forma'], ['gestion', 'Gestión'], ['dependencia', 'Dependencia'],
+  ['modalidad', 'Modalidad'], ['subnivel', 'Nivel / ciclo'], ['nivel', 'Nivel detallado (ESCALE)'], ['forma', 'Forma'], ['gestion', 'Gestión'], ['dependencia', 'Dependencia'],
   ['director', 'Director(a)'], ['telefono_fijo', 'Teléfono fijo'], ['celular', 'Celular'],
   ['telefono', 'Teléfono (texto original)'], ['email', 'Email'], ['pagweb', 'Página web'],
   ['direccion', 'Dirección'], ['localidad', 'Localidad'], ['centro_poblado', 'Centro poblado'], ['area', 'Área'],

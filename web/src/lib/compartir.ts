@@ -1,5 +1,5 @@
 import type { IIEE } from './types';
-import { num } from './format';
+import { direccionExacta, num } from './format';
 import { enlaceGoogleMaps, km, tiempo, type Ruta } from './ruta';
 
 /** Máximo de colegios en un mensaje (WhatsApp corta los enlaces muy largos) */
@@ -8,8 +8,9 @@ const MAX_EN_MENSAJE = 15;
 function bloque(ie: IIEE, n?: number): string {
   const l: string[] = [];
   l.push(`${n !== undefined ? `${n}. ` : ''}*${ie.nombre}*`);
-  l.push(`${ie.nivel ?? ''} · ${ie.gestion_cod === '3' ? 'Privada' : 'Pública'} · Cód. modular ${ie.cod_mod}`);
-  l.push(`📍 ${[ie.direccion, ie.distrito, ie.provincia, ie.departamento].filter(Boolean).join(', ')}`);
+  l.push(`${ie.modalidad ? `${ie.modalidad} · ${ie.subnivel}` : (ie.nivel ?? '')} · ${ie.gestion_cod === '3' ? 'Privada' : 'Pública'}`);
+  l.push(`🏫 Cód. modular ${ie.cod_mod}${ie.codlocal ? ` · Cód. local ${ie.codlocal}` : ''}`);
+  l.push(`📍 ${direccionExacta(ie)}`);
   if (ie.director) l.push(`👤 Director(a): ${ie.director}`);
   if (ie.telefono_fijo) l.push(`☎️ Fijo: ${ie.telefono_fijo}`);
   if (ie.celular) l.push(`📱 Celular: ${ie.celular}`);

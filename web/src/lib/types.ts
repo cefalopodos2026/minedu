@@ -7,6 +7,8 @@ export interface IIEE {
   nombre: string;
   nivel_cod: string | null;
   nivel: string | null;
+  modalidad: string | null;
+  subnivel: string | null;
   forma: string | null;
   sexo: string | null;
   gestion_cod: string | null;
@@ -66,6 +68,9 @@ export interface Resumen {
   alumnos_mixto: number;
   docentes: number;
   secciones: number;
+  /** alumnado por cada turno: { "Mañana": { servicios, alumnos }, ... } */
+  por_turno: Record<string, { servicios: number; alumnos: number }>;
+  por_modalidad: { modalidad: string | null; subnivel: string | null; servicios: number; alumnos: number }[];
 }
 
 /** [id, lat, lon, nombre, nivel, turno_grupo] */
@@ -77,6 +82,8 @@ export interface Filtros {
   dist: string;
   ugel: string;
   q: string;
+  modalidad: string;
+  subnivel: string;
   nivel: string;
   gestion: string;
   turno: string;
@@ -85,5 +92,5 @@ export interface Filtros {
 }
 
 export const FILTROS_VACIOS: Filtros = {
-  dpto: '', prov: '', dist: '', ugel: '', q: '', nivel: '', gestion: '', turno: '', estado: 'Activo', area: '',
+  dpto: '', prov: '', dist: '', ugel: '', q: '', modalidad: '', subnivel: '', nivel: '', gestion: '', turno: '', estado: 'Activo', area: '',
 };

@@ -5,8 +5,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Filtros, IIEE, Punto, Resumen } from '@/lib/types';
 import { FILTROS_VACIOS } from '@/lib/types';
 import { buscar, configurado, porId, puntos as fetchPuntos, resumen as fetchResumen } from '@/lib/supabase';
-import { DEPARTAMENTOS, NIVELES, distritos, provincias, ugeles, type Opcion } from '@/lib/geo';
-import { aCSV, descargar, num, TURNO_COLOR, TURNO_LABEL } from '@/lib/format';
+import {
+  DEPARTAMENTOS,
+  MODALIDADES,
+  corto,
+  distritos,
+  niveles,
+  provincias,
+  subniveles,
+  ugeles,
+  type Opcion,
+} from '@/lib/geo';
+import { aCSV, descargar, direccionExacta, num, TURNO_COLOR, TURNO_LABEL } from '@/lib/format';
 import Ficha from './Ficha';
 import RutaPanel from './RutaPanel';
 import { calcularRuta, MAX_PARADAS, miUbicacion, type Coord, type Modo, type Ruta } from '@/lib/ruta';
@@ -19,7 +29,9 @@ const MapView = dynamic(() => import('./MapView'), {
 
 const PAGINA = 50;
 const MAX_PUNTOS = 15000;
-const CLAVES: (keyof Filtros)[] = ['dpto', 'prov', 'dist', 'ugel', 'q', 'nivel', 'gestion', 'turno', 'estado', 'area'];
+const CLAVES: (keyof Filtros)[] = [
+  'dpto', 'prov', 'dist', 'ugel', 'q', 'modalidad', 'subnivel', 'nivel', 'gestion', 'turno', 'estado', 'area',
+];
 
 /* ------------------------------------------------------------------ */
 function Select({
@@ -101,15 +113,21 @@ function Tarjeta({
             </span>
           )}
         </div>
-        <p className="text-xs text-slate-600">
-          {ie.nivel} · {ie.gestion_cod === '3' ? 'Privada' : 'Pública'}
-          {ie.estado !== 'Activo' && <span className="ml-1 font-semibold text-slate-500">· INACTIVO</span>}
+        <p className="mt-0.5 flex flex-wrap items-center gap-1 text-xs text-slate-600">
+          {ie.modalidad && (
+            <span className="rounded bg-indigo-50 px-1.5 py-0.5 font-semibold text-indigo-800">
+              {corto(ie.modalidad)} · {ie.subnivel}
+            </span>
+          )}
+          <span>
+            {ie.nivel} · {ie.gestion_cod === '3' ? 'Privada' : 'Pública'}
+          </span>
+          {ie.estado !== 'Activo' && <span className="font-semibold text-slate-500">· INACTIVO</span>}
         </p>
-        <p className="mt-0.5 truncate text-xs text-slate-500">
-          {ie.distrito}, {ie.provincia}, {ie.departamento}
-        </p>
+        <p className="mt-0.5 text-xs leading-snug text-slate-500">📍 {direccionExacta(ie)}</p>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-600">
-          <span className="font-mono">Cód. {ie.cod_mod}</span>
+          <span className="font-mono">Cód. modular {ie.cod_mod}</span>
+          {ie.codlocal && <span className="font-mono">Cód. local {ie.codlocal}</span>}
           {ie.turno && (
             <span className="inline-flex items-center gap-1">
               <span className="h-2 w-2 rounded-full" style={{ background: TURNO_COLOR[ie.turno_grupo ?? ''] }} />
@@ -124,6 +142,49 @@ function Tarjeta({
         {ie.director && <p className="mt-0.5 truncate text-xs text-slate-500">Dir.: {ie.director}</p>}
       </button>
     </li>
+  );
+}
+
+/** Tablas del resumen: alumnado por cada turno y servicios/alumnos por modalidad y nivel */
+function DetalleResumen({ res }: { res: Resumen }) {
+  const turnos = Object.entries(res.por_turno ?? {});
+  const fila = 'flex justify-between gap-2 border-b border-slate-100 py-1 last:border-0';
+  return (
+    <div className="mt-1.5 grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-1">
+      <div className="rounded-lg bg-white p-2 ring-1 ring-slate-200">
+        <div className="mb-1 flex justify-between font-semibold text-slate-600">
+          <span>Turno</span>
+          <span>Servicios · Alumnos</span>
+        </div>
+        {turnos.map(([t, v]) => (
+          <div key={t} className={fila}>
+            <span>{t}</span>
+            <span className="tabular-nums text-slate-700">
+              {num(v.servicios)} · <b>{num(v.alumnos)}</b>
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="rounded-lg bg-white p-2 ring-1 ring-slate-200">
+        <div className="mb-1 flex justify-between font-semibold text-slate-600">
+          <span>Modalidad · nivel</span>
+          <span>Servicios · Alumnos</span>
+        </div>
+        {(res.por_modalidad ?? []).map((m) => (
+          <div key={`${m.modalidad}-${m.subnivel}`} className={fila}>
+            <span>
+              <b className="text-indigo-800">{corto(m.modalidad)}</b> {m.subnivel}
+            </span>
+            <span className="tabular-nums text-slate-700">
+              {num(m.servicios)} · <b>{num(m.alumnos)}</b>
+            </span>
+          </div>
+        ))}
+      </div>
+      <p className="text-[10px] leading-snug text-slate-500 sm:col-span-2 lg:col-span-1">
+        Alumnado del Censo Educativo 2025, sumado según el turno de cada servicio educativo.
+      </p>
+    </div>
   );
 }
 
@@ -172,6 +233,7 @@ export default function App() {
   const [vistaMovil, setVistaMovil] = useState<'lista' | 'mapa'>('lista');
   const [panel, setPanel] = useState<'resultados' | 'seleccionados'>('resultados');
   const [masFiltros, setMasFiltros] = useState(false);
+  const [verDetalle, setVerDetalle] = useState(false);
   const [soloSel, setSoloSel] = useState(false);
   const [ubicacion, setUbicacion] = useState<Coord | null>(null);
   const [ruta, setRuta] = useState<Ruta | null>(null);
@@ -386,6 +448,10 @@ export default function App() {
         if (n.ugel && !ugeles(v).some((u) => u.value === n.ugel)) n.ugel = '';
       }
       if (k === 'prov') n.dist = '';
+      if (k === 'modalidad') {
+        n.subnivel = '';
+        if (n.nivel && !niveles(v).some((x) => x.value === n.nivel)) n.nivel = '';
+      }
       return n;
     });
 
@@ -477,13 +543,29 @@ export default function App() {
                 disabled={!filtros.prov}
               />
             </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Select
+                label="Modalidad"
+                value={filtros.modalidad}
+                onChange={(v) => set('modalidad', v)}
+                todos="Todas"
+                opciones={MODALIDADES.map((m) => ({ value: m.value, label: `${m.corto} – ${m.value.replace('Educación ', '')}` }))}
+              />
+              <Select
+                label="Nivel / ciclo"
+                value={filtros.subnivel}
+                onChange={(v) => set('subnivel', v)}
+                opciones={subniveles(filtros.modalidad)}
+                disabled={!filtros.modalidad}
+              />
+            </div>
             {masFiltros && (
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-2">
                 <Select
-                  label="Nivel / modalidad"
+                  label="Nivel detallado (ESCALE)"
                   value={filtros.nivel}
                   onChange={(v) => set('nivel', v)}
-                  opciones={NIVELES.map((n) => ({ value: n, label: n }))}
+                  opciones={niveles(filtros.modalidad)}
                 />
                 <Select
                   label="Gestión"
@@ -549,6 +631,14 @@ export default function App() {
                 <Kpi label="Alum. día y noche" valor={num(res.alumnos_mixto)} color={TURNO_COLOR.MIXTO} />
                 <Kpi label="Con teléfono" valor={num(res.con_telefono)} />
               </div>
+              <button
+                onClick={() => setVerDetalle((d) => !d)}
+                className="mt-1.5 w-full text-left text-xs font-semibold text-blue-700 hover:underline"
+                aria-expanded={verDetalle}
+              >
+                {verDetalle ? '▾' : '▸'} Alumnado por turno y por modalidad
+              </button>
+              {verDetalle && <DetalleResumen res={res} />}
             </div>
           )}
 

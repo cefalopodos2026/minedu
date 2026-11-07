@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import type { IIEE } from '@/lib/types';
 import { delLocal } from '@/lib/supabase';
 import { abrirWhatsApp, textoWhatsApp } from '@/lib/compartir';
-import { fechaPE, num, telefonos, TURNO_COLOR, TURNO_LABEL, waCelular } from '@/lib/format';
+import { direccionExacta, fechaPE, num, telefonos, TURNO_COLOR, TURNO_LABEL, waCelular } from '@/lib/format';
 
 interface Props {
   ie: IIEE;
@@ -128,6 +128,16 @@ export default function Ficha({ ie, seleccionado, onToggleSel, onCerrar, onVerMa
   const activosLocal = (local ?? []).filter((s) => s.estado === 'Activo');
   const sumaLocal = (g?: string) =>
     activosLocal.filter((s) => !g || s.turno_grupo === g).reduce((a, s) => a + (s.talum ?? 0), 0);
+  // alumnado del local por cada turno (Mañana, Tarde, Noche, Mañana-Tarde, ...)
+  const porTurnoLocal = Object.entries(
+    activosLocal.reduce<Record<string, { servicios: number; alumnos: number }>>((acc, s) => {
+      const t = s.turno ?? 'Sin turno';
+      acc[t] ??= { servicios: 0, alumnos: 0 };
+      acc[t].servicios++;
+      acc[t].alumnos += s.talum ?? 0;
+      return acc;
+    }, {}),
+  ).sort((a, b) => b[1].alumnos - a[1].alumnos);
 
   const compartir = async () => {
     const url = `${location.origin}${location.pathname}?ie=${encodeURIComponent(ie.id)}`;
@@ -160,8 +170,9 @@ export default function Ficha({ ie, seleccionado, onToggleSel, onCerrar, onVerMa
           <div className="min-w-0 flex-1">
             <h2 className="text-lg font-bold leading-tight text-slate-900">{ie.nombre}</h2>
             <p className="mt-0.5 text-sm text-slate-600">
-              {ie.nivel} · {ie.gestion}
+              {ie.modalidad ? `${ie.modalidad} · ${ie.subnivel}` : ie.nivel} · {ie.gestion}
             </p>
+            <p className="mt-0.5 text-xs leading-snug text-slate-500">📍 {direccionExacta(ie)}</p>
             <div className="mt-1.5 flex flex-wrap gap-1.5 text-xs">
               <span
                 className={`rounded-full px-2 py-0.5 font-medium ${
@@ -181,6 +192,11 @@ export default function Ficha({ ie, seleccionado, onToggleSel, onCerrar, onVerMa
               <span className="rounded-full bg-slate-100 px-2 py-0.5 font-mono text-slate-700">
                 Cód. modular {ie.cod_mod}
               </span>
+              {ie.codlocal && (
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 font-mono text-slate-700">
+                  Cód. local {ie.codlocal}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -260,7 +276,8 @@ export default function Ficha({ ie, seleccionado, onToggleSel, onCerrar, onVerMa
 
         <Seccion titulo="Ubicación">
           <dl>
-            <Fila k="Dirección" v={ie.direccion} />
+            <Fila k="Dirección exacta" v={<b className="font-semibold">{direccionExacta(ie)}</b>} />
+            <Fila k="Dirección (vía)" v={ie.direccion} />
             <Fila k="Localidad" v={ie.localidad} />
             <Fila k="Centro poblado" v={ie.centro_poblado} />
             <Fila k="Área" v={ie.area} />
@@ -298,7 +315,9 @@ export default function Ficha({ ie, seleccionado, onToggleSel, onCerrar, onVerMa
             <Fila k="Anexo" v={ie.anexo} mono />
             <Fila k="Código de local" v={ie.codlocal} mono />
             <Fila k="Código institución" v={ie.codinst} mono />
-            <Fila k="Nivel / modalidad" v={ie.nivel} />
+            <Fila k="Modalidad" v={ie.modalidad} />
+            <Fila k="Nivel / ciclo" v={ie.subnivel} />
+            <Fila k="Nivel detallado" v={ie.nivel} />
             <Fila k="Forma" v={ie.forma} />
             {ie.tipo_programa && <Fila k="Tipo de programa" v={ie.tipo_programa} />}
             <Fila k="Alumnado (sexo)" v={ie.sexo} />
@@ -327,8 +346,27 @@ export default function Ficha({ ie, seleccionado, onToggleSel, onCerrar, onVerMa
                   <Kpi label="Turno noche" valor={num(sumaLocal('NOCTURNO'))} color={TURNO_COLOR.NOCTURNO} />
                   <Kpi label="Día y noche" valor={num(sumaLocal('MIXTO'))} color={TURNO_COLOR.MIXTO} />
                 </div>
+                {/* Alumnado del local por cada turno */}
+                <table className="mb-3 w-full text-left text-sm">
+                  <thead className="text-xs text-slate-500">
+                    <tr>
+                      <th className="py-1 font-medium">Turno</th>
+                      <th className="py-1 text-right font-medium">Servicios</th>
+                      <th className="py-1 text-right font-medium">Alumnos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {porTurnoLocal.map(([t, v]) => (
+                      <tr key={t} className="border-t border-slate-100">
+                        <td className="py-1">{t}</td>
+                        <td className="py-1 text-right tabular-nums">{v.servicios}</td>
+                        <td className="py-1 text-right font-semibold tabular-nums">{num(v.alumnos)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
                 <div className="-mx-1 overflow-x-auto">
-                  <table className="w-full min-w-[30rem] text-left text-sm">
+                  <table className="w-full text-left text-sm">
                     <thead className="text-xs text-slate-500">
                       <tr>
                         <th className="px-1 py-1 font-medium">Servicio</th>

@@ -22,6 +22,8 @@ function params(f: Filtros) {
     p_dist: n(f.dist),
     p_ugel: n(f.ugel),
     p_q: n(normalizar(f.q)),
+    p_modalidad: n(f.modalidad),
+    p_subnivel: n(f.subnivel),
     p_nivel: n(f.nivel),
     p_gestion: n(f.gestion),
     p_turno: n(f.turno),
