@@ -25,6 +25,34 @@ Objetivo: publicar el aplicativo "Colegios del Perú" (ya construido y probado e
 13. [x] **Compartir por WhatsApp**: enviar el colegio o los seleccionados (datos clave, teléfonos y ubicación) y la ruta.
 14. [x] **Presentación ágil en celular**: barra inferior con Lista / Mapa / Ruta, botones grandes y acciones rápidas en la ficha.
 
+### Pedido: modalidades, códigos, dirección exacta y alumnado por turno
+Clasificación oficial por el código `NIV_MOD` del padrón:
+
+| Modalidad | Subnivel | Códigos |
+|---|---|---|
+| Educación Básica Regular (EBR) | Inicial / Primaria / Secundaria | A1–A5 / B0 / F0 |
+| Educación Básica Especial (EBE) | Inicial / Primaria / General | E1 / E2 / E0 |
+| Educación Básica Alternativa (EBA) | Inicial e Intermedio / Avanzado / General / Primaria de adultos / Secundaria de adultos | D1 / D2 / D0 / C0 / G0 |
+| Educación Técnico-Productiva (ETP) | CETPRO / Educación ocupacional | L0 / L1–L9 |
+| Educación Superior | Tecnológica / Pedagógica / Artística | T0, S0 / K0, P0 / M0 |
+
+15. [ ] **ETL y esquema**: crear las columnas `modalidad` y `subnivel`, derivadas de `nivel_cod`.
+16. [ ] **SQL**:
+    - nuevo filtro `p_modalidad`;
+    - el resumen agrega el **alumnado por cada turno** (Mañana, Tarde, Noche, Mañana-Tarde, Mañana-Noche, Tarde-Noche, Mañana-Tarde-Noche) y el **número de servicios y alumnos por modalidad**.
+17. [ ] **Lista de resultados**: mostrar el código modular, el **código de local**, la **dirección exacta** y la modalidad y subnivel.
+18. [ ] **Filtros**: agregar un filtro "Modalidad", que hace que el filtro "Nivel" muestre solo los niveles de esa modalidad.
+19. [ ] **Resumen y ficha**:
+    - tablas "Alumnado por turno" y "Por modalidad" en el resumen;
+    - en la ficha: modalidad, subnivel, **dirección exacta** completa y alumnado del local por cada turno.
+20. [ ] **Publicar**:
+    - recargar Supabase y verificarla;
+    - pruebas en escritorio y celular;
+    - CSV y WhatsApp con los campos nuevos;
+    - actualizar Informe y README, hacer commit, push y verificar en producción.
+
+Nota: el censo informa el alumnado **por servicio educativo**, y cada servicio tiene un solo turno. Por eso el "alumnado por turno" suma los alumnos de los servicios de cada turno. Un servicio "Mañana-Tarde" se cuenta en ese turno combinado, porque el censo no lo separa por mañana y tarde.
+
 Se hará un commit antes y después de cada tarea importante.
 
 ## Revisión
