@@ -5,8 +5,9 @@
 | **Proyecto** | Aplicativo web para ubicar y consultar colegios del Perú |
 | **Fuente de datos** | ESCALE, Unidad de Estadística del Ministerio de Educación (MINEDU) |
 | **Repositorio** | https://github.com/cefalopodos2026/minedu |
-| **Base de datos** | Supabase (PostgreSQL administrado) |
-| **Despliegue** | Vercel |
+| **Aplicación en producción** | **https://minedu-swart.vercel.app** |
+| **Base de datos** | Supabase (PostgreSQL administrado), proyecto `minedu`, región São Paulo (sa-east-1) |
+| **Despliegue** | Vercel, proyecto `minedu`, despliegue automático desde GitHub (rama `main`) |
 | **Fecha** | Noviembre 2026 |
 
 ---
@@ -222,11 +223,18 @@ Los filtros disponibles son departamento, provincia, distrito, UGEL, texto o có
 
 ## 8. Despliegue
 
-| Paso | Herramienta |
-|---|---|
-| Código fuente | GitHub, `cefalopodos2026/minedu`, rama `main` |
-| Base de datos | Supabase: `supabase/schema.sql` + `scripts/load.mjs` |
-| Aplicación | Vercel, *Root Directory* `web`, variables `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` |
+| Paso | Herramienta | Estado |
+|---|---|---|
+| Código fuente | GitHub, `cefalopodos2026/minedu`, rama `main` | Publicado |
+| Base de datos | Supabase creado desde el Marketplace de Vercel (integración oficial), región São Paulo. Esquema y datos cargados con `supabase/schema.sql` + `scripts/load.mjs`, por conexión **SSL verificada** (`sslmode=verify-full` con la CA raíz de Supabase) | 180,943 IIEE + 1,892 distritos |
+| Aplicación | Vercel, *Root Directory* `web`. La integración inyecta las variables `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` | **https://minedu-swart.vercel.app** |
+| Despliegue continuo | Cada `git push` a `main` publica una nueva versión de producción | Activo |
+
+**Verificación en producción**, automatizada con `scripts/verificar-supabase.mjs`, `scripts/screenshot.mjs` y `scripts/prueba-ruta.mjs`:
+
+- **Lectura con la clave pública:** el resumen, la búsqueda por nombre y por código, los puntos del mapa y la ficha funcionan.
+- **Seguridad:** insertar, modificar y borrar con la clave pública quedan **bloqueados** (RLS).
+- **Navegador:** escritorio, tablet y celular funcionan sin errores de consola. Con GPS simulado, la ruta óptima a 3 colegios da 22 min en auto y 2 h 44 min a pie, y también funcionan el enlace de navegación de Google Maps, el mensaje de WhatsApp y los teléfonos fijo y celular.
 
 **Actualización de datos:** cuando ESCALE publique un nuevo padrón, basta con descargarlo y ejecutar `npm run etl` y luego `npm run load` en la carpeta `scripts`. La aplicación no necesita cambios.
 
