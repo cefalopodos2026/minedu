@@ -50,6 +50,10 @@ cd scripts
 DATABASE_URL="postgresql://..." npm run load
 ```
 
+> **SSL verificado:** Supabase firma sus certificados con su propia autoridad raíz, incluida en `supabase/prod-ca-2021.crt`. Para que la conexión quede cifrada **y** verificada, agregue a la URL `?sslmode=verify-full&sslrootcert=../supabase/prod-ca-2021.crt`.
+>
+> **Verificación:** `node verificar-supabase.mjs <archivo .env>` comprueba con la clave pública que las búsquedas funcionen y que **no** se pueda escribir.
+
 *Alternativa sin cadena de conexión:* pegue `supabase/schema.sql` en el **SQL Editor** de Supabase y luego ejecute
 `SUPABASE_URL=https://xxxx.supabase.co SUPABASE_SERVICE_ROLE_KEY=... npm run load`.
 
