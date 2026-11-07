@@ -30,6 +30,25 @@ const turnoGrupo = (t) => {
   const noche = /Noche/i.test(t), dia = /Ma.ana|Tarde/i.test(t);
   return noche && dia ? 'MIXTO' : noche ? 'NOCTURNO' : 'DIURNO';
 };
+// Modalidad y subnivel según el código oficial NIV_MOD del padrón ESCALE
+const MODALIDAD = {
+  A: ['Educación Básica Regular', 'Inicial'], B: ['Educación Básica Regular', 'Primaria'],
+  F: ['Educación Básica Regular', 'Secundaria'],
+  E: ['Educación Básica Especial', null], C: ['Educación Básica Alternativa', 'Primaria de adultos'],
+  D: ['Educación Básica Alternativa', null], G: ['Educación Básica Alternativa', 'Secundaria de adultos'],
+  L: ['Educación Técnico-Productiva', null], T: ['Educación Superior', 'Tecnológica'],
+  S: ['Educación Superior', 'Tecnológica'], K: ['Educación Superior', 'Pedagógica'],
+  P: ['Educación Superior', 'Pedagógica'], M: ['Educación Superior', 'Artística'],
+};
+const SUBNIVEL = {
+  E0: 'General', E1: 'Inicial', E2: 'Primaria', D0: 'General', D1: 'Inicial e Intermedio', D2: 'Avanzado',
+  L0: 'CETPRO', // L1..L9: antigua Educación Ocupacional
+};
+const modalidad = (cod) => {
+  const m = cod ? MODALIDAD[cod[0]] : null;
+  if (!m) return { modalidad: null, subnivel: null };
+  return { modalidad: m[0], subnivel: m[1] ?? SUBNIVEL[cod] ?? (cod[0] === 'L' ? 'Educación ocupacional' : null) };
+};
 
 // 1) Censo 2025: alumnos/docentes/secciones por cod_mod+anexo
 const censo = new Map();
@@ -42,7 +61,7 @@ for (const r of records(padronCenso)) {
 }
 console.log('censo 2025:', censo.size);
 
-const COLS = ['id','cod_mod','anexo','codinst','codlocal','nombre','nombre_norm','nivel_cod','nivel','forma',
+const COLS = ['id','cod_mod','anexo','codinst','codlocal','nombre','nombre_norm','nivel_cod','nivel','modalidad','subnivel','forma',
   'sexo','gestion_cod','gestion','dependencia','director','telefono','telefono_fijo','celular','email','pagweb','direccion','localidad',
   'centro_poblado','codcp_inei','area','ubigeo','cod_dpto','cod_prov','departamento','provincia','distrito',
   'dre','codooii','ugel','lat','lon','tipo_programa','turno','turno_grupo','ruc','razon_social','promotor',
@@ -78,7 +97,7 @@ for (const r of records(padronWeb, { decoder: cp850 })) {
   if (tels.celular) conCel++;
   const row = {
     id, cod_mod: r.COD_MOD, anexo: r.ANEXO, codinst: nn(r.CODINST), codlocal: nn(r.CODLOCAL),
-    nombre: r.CEN_EDU, nombre_norm: norm(r.CEN_EDU), nivel_cod: nn(r.NIV_MOD), nivel: nn(r.D_NIV_MOD),
+    nombre: r.CEN_EDU, nombre_norm: norm(r.CEN_EDU), nivel_cod: nn(r.NIV_MOD), nivel: nn(r.D_NIV_MOD), ...modalidad(r.NIV_MOD),
     forma: nn(r.D_FORMA), sexo: nn(r.D_TIPSSEXO), gestion_cod: nn(r.GESTION), gestion: nn(r.D_GESTION),
     dependencia: nn(r.D_GES_DEP), director: nn(r.DIRECTOR), telefono, ...tels, email: nn(r.EMAIL),
     pagweb: nn(r.PAGWEB), direccion: nn(r.DIR_CEN), localidad: nn(r.LOCALIDAD), centro_poblado: nn(r.CEN_POB),

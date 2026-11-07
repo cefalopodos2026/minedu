@@ -19,7 +19,9 @@ create table if not exists public.iiee (
   nombre              text not null,
   nombre_norm         text not null,             -- nombre sin tildes, en mayúsculas (búsqueda)
   nivel_cod           text,
-  nivel               text,                      -- nivel / modalidad
+  nivel               text,                      -- nivel / modalidad (texto oficial ESCALE)
+  modalidad           text,                      -- Educación Básica Regular / Especial / Alternativa / Técnico-Productiva / Superior
+  subnivel            text,                      -- Inicial, Primaria, Secundaria, Tecnológica, Pedagógica, Artística, ...
   forma               text,                      -- escolarizada / no escolarizada
   sexo                text,                      -- mixto / varones / mujeres
   gestion_cod         text,                      -- 1 pública directa, 2 pública gestión privada, 3 privada
