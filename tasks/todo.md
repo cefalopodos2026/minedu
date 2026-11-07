@@ -53,6 +53,26 @@ Clasificación oficial por el código `NIV_MOD` del padrón:
 
 Nota: el censo informa el alumnado **por servicio educativo**, y cada servicio tiene un solo turno. Por eso el "alumnado por turno" suma los alumnos de los servicios de cada turno. Un servicio "Mañana-Tarde" se cuenta en ese turno combinado, porque el censo no lo separa por mañana y tarde.
 
+### Pedido: inicio de sesión (usuario maestro y usuario de consulta) y marca APLICACIONES DONET
+21. [ ] **Credenciales fuera del código**: los usuarios y contraseñas (`donet` maestro, `prueba` consulta) se guardan en `.env`, que está en `.gitignore`. Nunca van al repositorio.
+22. [ ] **Supabase Auth**:
+    - el script `scripts/crear-usuarios.mjs` crea o actualiza los usuarios con la clave de servicio;
+    - el rol (`maestro` / `consulta`) se guarda en `app_metadata`, que solo puede asignar el servidor;
+    - el nombre de usuario se convierte en un correo interno (`usuario@usuarios.donet.local`).
+23. [ ] **Base protegida**:
+    - RLS y permisos de las funciones solo para usuarios **autenticados con rol** (se quita el acceso anónimo);
+    - si alguien se registrara por su cuenta, no vería datos, porque no tendría rol.
+24. [ ] **Pantalla de inicio**:
+    - colores institucionales (rojo y blanco), título "Colegios del Perú · MINEDU (datos ESCALE)";
+    - campos Usuario / Contraseña (mostrar u ocultar) y botón "Iniciar sesión";
+    - pie "© 2026 APLICACIONES DONET – Soluciones Empresariales";
+    - la sesión se mantiene al recargar; en la cabecera aparecen el usuario, el rol y el botón "Salir".
+25. [ ] **Backend local de pruebas** (`dev-mock.mjs`): inicio de sesión simulado y `auth.jwt()` simulado, para seguir probando sin la nube.
+26. [ ] **Publicar**:
+    - aplicar el esquema en Supabase, crear los usuarios y verificar que **sin sesión no hay datos** y que con cada usuario sí los hay;
+    - pruebas en escritorio y celular;
+    - Informe y README, commit, push y verificación en producción.
+
 Se hará un commit antes y después de cada tarea importante.
 
 ## Revisión
