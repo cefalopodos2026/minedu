@@ -8,6 +8,9 @@ import { buscar, configurado, porId, puntos as fetchPuntos, resumen as fetchResu
 import { DEPARTAMENTOS, NIVELES, distritos, provincias, ugeles, type Opcion } from '@/lib/geo';
 import { aCSV, descargar, num, TURNO_COLOR, TURNO_LABEL } from '@/lib/format';
 import Ficha from './Ficha';
+import RutaPanel from './RutaPanel';
+import { calcularRuta, MAX_PARADAS, miUbicacion, type Coord, type Modo, type Ruta } from '@/lib/ruta';
+import { abrirWhatsApp, textoWhatsApp } from '@/lib/compartir';
 
 const MapView = dynamic(() => import('./MapView'), {
   ssr: false,
@@ -170,6 +173,10 @@ export default function App() {
   const [panel, setPanel] = useState<'resultados' | 'seleccionados'>('resultados');
   const [masFiltros, setMasFiltros] = useState(false);
   const [soloSel, setSoloSel] = useState(false);
+  const [ubicacion, setUbicacion] = useState<Coord | null>(null);
+  const [ruta, setRuta] = useState<Ruta | null>(null);
+  const [rutaCargando, setRutaCargando] = useState<string | null>(null); // mensaje de la fase en curso
+  const [rutaError, setRutaError] = useState<string | null>(null);
   const [encuadre, setEncuadre] = useState(0);
   const [exportando, setExportando] = useState<string | null>(null);
   const reqId = useRef(0);
@@ -280,6 +287,52 @@ export default function App() {
       resultados.forEach((r) => n.set(r.id, r));
       return n;
     });
+
+  /* ---------- ruta óptima desde mi ubicación ---------- */
+  const iniciarRuta = async (destinos: IIEE[], modo: Modo = 'auto') => {
+    setRuta(null);
+    setRutaError(null);
+    setRutaCargando('Obteniendo su ubicación…');
+    setActivo(null);
+    setSoloSel(false);
+    setVistaMovil('mapa');
+    try {
+      const origen = await miUbicacion();
+      setUbicacion(origen);
+      setRutaCargando('Calculando la ruta más corta por las calles…');
+      setRuta(await calcularRuta(origen, destinos, modo));
+    } catch (e) {
+      setRutaError((e as Error).message);
+    } finally {
+      setRutaCargando(null);
+    }
+  };
+
+  const cambiarModo = async (modo: Modo) => {
+    if (!ruta) return;
+    setRutaError(null);
+    setRutaCargando(`Calculando la ruta ${modo === 'pie' ? 'a pie' : 'en auto'}…`);
+    try {
+      setRuta(await calcularRuta(ruta.origen, ruta.paradas, modo));
+    } catch (e) {
+      setRutaError((e as Error).message);
+    } finally {
+      setRutaCargando(null);
+    }
+  };
+
+  const cerrarRuta = () => {
+    setRuta(null);
+    setRutaError(null);
+  };
+
+  const irAMiUbicacion = async () => {
+    try {
+      setUbicacion(await miUbicacion());
+    } catch (e) {
+      setRutaError((e as Error).message);
+    }
+  };
 
   const verSeleccionadosEnMapa = () => {
     setSoloSel(true);
@@ -540,7 +593,21 @@ export default function App() {
                   disabled={!seleccion.size}
                   className="rounded-md bg-red-600 px-2 py-1 font-medium text-white hover:bg-red-700 disabled:opacity-40"
                 >
-                  Ver seleccionados en el mapa
+                  Ver en el mapa
+                </button>
+                <button
+                  onClick={() => iniciarRuta(listaSel)}
+                  disabled={!seleccion.size}
+                  className="rounded-md bg-blue-600 px-2 py-1 font-medium text-white hover:bg-blue-700 disabled:opacity-40"
+                >
+                  Ruta óptima{seleccion.size > MAX_PARADAS ? ` (primeros ${MAX_PARADAS})` : ''}
+                </button>
+                <button
+                  onClick={() => abrirWhatsApp(textoWhatsApp(listaSel))}
+                  disabled={!seleccion.size}
+                  className="rounded-md bg-[#25D366] px-2 py-1 font-medium text-white hover:brightness-95 disabled:opacity-40"
+                >
+                  WhatsApp
                 </button>
                 <button
                   onClick={() => descargar('colegios_seleccionados.csv', aCSV(listaSel))}
@@ -640,6 +707,27 @@ export default function App() {
             onToggleSel={toggleSel}
             idsSel={idsSel}
             fichaAbierta={!!activo}
+            ruta={ruta}
+            ubicacion={ubicacion}
+          />
+          <button
+            onClick={irAMiUbicacion}
+            title="Mi ubicación"
+            aria-label="Mi ubicación"
+            className="absolute right-[10px] top-[132px] z-[500] grid h-[44px] w-[44px] place-items-center rounded-lg border-2 border-black/20 bg-white text-blue-600 hover:bg-slate-50"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+            </svg>
+          </button>
+          <RutaPanel
+            ruta={ruta}
+            cargando={rutaCargando}
+            error={rutaError}
+            onModo={cambiarModo}
+            onCerrar={cerrarRuta}
+            onAbrir={abrir}
           />
           {/* Avisos y leyenda */}
           <div className="pointer-events-none absolute left-3 top-3 z-[500] flex max-w-[calc(100%-5rem)] flex-col gap-2">
@@ -666,7 +754,11 @@ export default function App() {
               </div>
             ) : null}
           </div>
-          <div className="pointer-events-none absolute bottom-6 right-3 z-[500] rounded-lg bg-white/95 px-3 py-2 text-[11px] shadow ring-1 ring-slate-200 lg:bottom-6">
+          <div
+            className={`pointer-events-none absolute bottom-6 right-3 z-[500] rounded-lg bg-white/95 px-3 py-2 text-[11px] shadow ring-1 ring-slate-200 ${
+              ruta || rutaCargando || rutaError ? 'hidden lg:block' : ''
+            }`}
+          >
             {Object.entries(TURNO_LABEL).map(([k, v]) => (
               <div key={k} className="flex items-center gap-1.5">
                 <span className="h-2.5 w-2.5 rounded-full ring-1 ring-white" style={{ background: TURNO_COLOR[k] }} />
@@ -688,6 +780,7 @@ export default function App() {
               onToggleSel={() => toggleSel(activo.id)}
               onCerrar={() => setActivo(null)}
               onAbrir={abrir}
+              onRuta={() => iniciarRuta([activo])}
               onVerMapa={() => {
                 const a = activo;
                 setSoloSel(false);
@@ -702,7 +795,7 @@ export default function App() {
       </div>
 
       {/* Navegación inferior (móvil / tablet) */}
-      <nav className="fixed inset-x-0 bottom-0 z-[900] grid grid-cols-2 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] text-sm shadow-[0_-2px_8px_rgba(0,0,0,0.06)] lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-[900] grid grid-cols-3 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] text-sm shadow-[0_-2px_8px_rgba(0,0,0,0.06)] lg:hidden">
         {(['lista', 'mapa'] as const).map((v) => (
           <button
             key={v}
@@ -712,9 +805,20 @@ export default function App() {
             }}
             className={`h-12 font-semibold ${vistaMovil === v ? 'text-red-700' : 'text-slate-500'}`}
           >
-            {v === 'lista' ? `Lista (${num(total)})` : `Mapa${seleccion.size ? ` · ${seleccion.size} sel.` : ''}`}
+            {v === 'lista' ? `📋 Lista (${num(total)})` : `🗺️ Mapa${seleccion.size ? ` · ${seleccion.size}` : ''}`}
           </button>
         ))}
+        <button
+          onClick={() => {
+            setVistaMovil('mapa');
+            if (ruta || rutaCargando) return;
+            if (listaSel.length) iniciarRuta(listaSel);
+            else setRutaError('Marque uno o varios colegios (casilla) o abra una ficha y pulse "Ruta".');
+          }}
+          className={`h-12 font-semibold ${ruta ? 'text-blue-700' : 'text-slate-500'}`}
+        >
+          🧭 Ruta{ruta ? ` · ${ruta.paradas.length}` : ''}
+        </button>
       </nav>
     </div>
   );

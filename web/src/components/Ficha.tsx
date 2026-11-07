@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { IIEE } from '@/lib/types';
 import { delLocal } from '@/lib/supabase';
+import { abrirWhatsApp, textoWhatsApp } from '@/lib/compartir';
 import { fechaPE, num, telefonos, TURNO_COLOR, TURNO_LABEL, waCelular } from '@/lib/format';
 
 interface Props {
@@ -11,6 +12,8 @@ interface Props {
   onToggleSel: () => void;
   onCerrar: () => void;
   onVerMapa: () => void;
+  /** trazar la ruta desde la ubicación actual hasta este colegio */
+  onRuta: () => void;
   onAbrir: (id: string) => void;
 }
 
@@ -32,6 +35,31 @@ function Seccion({ titulo, children }: { titulo: string; children: React.ReactNo
   );
 }
 
+function Accion(p: {
+  onClick: () => void;
+  icono: string;
+  texto: string;
+  activo?: boolean;
+  verde?: boolean;
+  disabled?: boolean;
+}) {
+  const color = p.verde
+    ? 'bg-[#25D366] text-white'
+    : p.activo
+      ? 'bg-red-600 text-white'
+      : 'bg-slate-100 text-slate-700 hover:bg-slate-200';
+  return (
+    <button
+      onClick={p.onClick}
+      disabled={p.disabled}
+      className={`flex flex-col items-center gap-0.5 rounded-xl px-1 py-2 disabled:opacity-40 ${color}`}
+    >
+      <span className="text-lg leading-none">{p.icono}</span>
+      {p.texto}
+    </button>
+  );
+}
+
 /** Botones para llamar (y escribir por WhatsApp a los celulares) */
 function Telefonos({ lista, whatsapp }: { lista: { texto: string; marcar: string }[]; whatsapp?: boolean }) {
   return (
@@ -40,7 +68,7 @@ function Telefonos({ lista, whatsapp }: { lista: { texto: string; marcar: string
         <span key={t.marcar} className="inline-flex gap-1">
           <a
             href={`tel:${t.marcar}`}
-            className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 font-medium text-emerald-800 ring-1 ring-emerald-200 hover:bg-emerald-100"
+            className="inline-flex items-center gap-1 whitespace-nowrap rounded-md bg-emerald-50 px-2 py-1 font-medium text-emerald-800 ring-1 ring-emerald-200 hover:bg-emerald-100"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
               <path d="M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1z" />
@@ -75,7 +103,7 @@ function Kpi({ label, valor, color }: { label: string; valor: string; color?: st
   );
 }
 
-export default function Ficha({ ie, seleccionado, onToggleSel, onCerrar, onVerMapa, onAbrir }: Props) {
+export default function Ficha({ ie, seleccionado, onToggleSel, onCerrar, onVerMapa, onRuta, onAbrir }: Props) {
   const [cargado, setCargado] = useState<{ codlocal: string; filas: IIEE[] } | null>(null);
   const [copiado, setCopiado] = useState(false);
   const local = cargado && cargado.codlocal === ie.codlocal ? cargado.filas : null;
@@ -156,29 +184,18 @@ export default function Ficha({ ie, seleccionado, onToggleSel, onCerrar, onVerMa
             </div>
           </div>
         </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <button
+        {/* Acciones rápidas: botones grandes, cómodos en el celular */}
+        <div className="mt-3 grid grid-cols-5 gap-1.5 text-[11px] font-semibold sm:text-xs">
+          <Accion
             onClick={onToggleSel}
-            className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
-              seleccionado ? 'bg-red-50 text-red-700 ring-1 ring-red-200' : 'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
-          >
-            {seleccionado ? 'Quitar de seleccionados' : '+ Seleccionar'}
-          </button>
-          {tieneCoord && (
-            <button
-              onClick={onVerMapa}
-              className="rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50"
-            >
-              Ver en mapa
-            </button>
-          )}
-          <button
-            onClick={compartir}
-            className="rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50"
-          >
-            {copiado ? 'Enlace copiado' : 'Compartir'}
-          </button>
+            activo={seleccionado}
+            icono={seleccionado ? '✓' : '+'}
+            texto={seleccionado ? 'Elegido' : 'Elegir'}
+          />
+          <Accion onClick={onRuta} icono="🧭" texto="Ruta" disabled={!tieneCoord} />
+          <Accion onClick={onVerMapa} icono="🗺️" texto="Mapa" disabled={!tieneCoord} />
+          <Accion onClick={() => abrirWhatsApp(textoWhatsApp([ie]))} icono="💬" texto="WhatsApp" verde />
+          <Accion onClick={compartir} icono="🔗" texto={copiado ? 'Copiado' : 'Enlace'} />
         </div>
       </header>
 
@@ -265,14 +282,12 @@ export default function Ficha({ ie, seleccionado, onToggleSel, onCerrar, onVerMa
               >
                 Abrir en Google Maps
               </a>
-              <a
-                className="rounded-lg bg-white px-3 py-1.5 text-sm text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50"
-                href={`https://www.google.com/maps/dir/?api=1&destination=${ie.lat},${ie.lon}`}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+                onClick={onRuta}
               >
-                Cómo llegar
-              </a>
+                Cómo llegar desde mi ubicación
+              </button>
             </div>
           )}
         </Seccion>

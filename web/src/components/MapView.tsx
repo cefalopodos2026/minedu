@@ -8,6 +8,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import type { IIEE, Punto } from '@/lib/types';
 import { TURNO_COLOR, TURNO_LABEL } from '@/lib/format';
+import type { Coord, Ruta } from '@/lib/ruta';
 
 interface Props {
   puntos: Punto[];
@@ -21,7 +22,14 @@ interface Props {
   idsSel: Set<string>;
   /** hay una ficha abierta tapando el lado derecho (escritorio) */
   fichaAbierta: boolean;
+  /** ruta óptima trazada por las calles */
+  ruta: Ruta | null;
+  /** ubicación actual del usuario */
+  ubicacion: Coord | null;
 }
+
+/** halo azul claro alrededor de "Usted está aquí" (tamaño fijo en píxeles, distinto de los colegios) */
+const HALO: L.CircleMarkerOptions = { radius: 20, stroke: false, fillColor: '#3b82f6', fillOpacity: 0.22, interactive: false };
 
 const PERU: L.LatLngBoundsExpression = [[-18.4, -81.4], [-0.03, -68.6]];
 
@@ -49,14 +57,18 @@ const pin = (n: number | string, color = '#dc2626') =>
   });
 
 export default function MapView(props: Props) {
-  const { puntos, seleccionados, activo, soloSeleccionados, encuadre, onAbrir, onToggleSel, idsSel, fichaAbierta } =
-    props;
+  const {
+    puntos, seleccionados, activo, soloSeleccionados, encuadre, onAbrir, onToggleSel, idsSel, fichaAbierta, ruta, ubicacion,
+  } = props;
   const divRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
   const selLayerRef = useRef<L.LayerGroup | null>(null);
   const activoRef = useRef<L.Marker | null>(null);
-  const pendienteRef = useRef<L.LatLng | null>(null);
+  const rutaLayerRef = useRef<L.LayerGroup | null>(null);
+  const ubicLayerRef = useRef<L.LayerGroup | null>(null);
+  /** acción a ejecutar cuando el mapa oculto (pestaña Lista en celular) vuelva a verse */
+  const pendienteRef = useRef<(() => void) | null>(null);
   const cbRef = useRef({ onAbrir, onToggleSel });
   const idsSelRef = useRef(idsSel);
   useEffect(() => {
@@ -97,6 +109,8 @@ export default function MapView(props: Props) {
       },
     }).addTo(map);
     selLayerRef.current = L.layerGroup().addTo(map);
+    rutaLayerRef.current = L.layerGroup().addTo(map);
+    ubicLayerRef.current = L.layerGroup().addTo(map);
 
     // Delegación de eventos de los botones de los popups
     const cont = map.getContainer();
@@ -151,6 +165,7 @@ export default function MapView(props: Props) {
     const layer = selLayerRef.current;
     if (!layer) return;
     layer.clearLayers();
+    if (ruta) return;
     seleccionados.forEach((s, i) => {
       if (s.lat == null || s.lon == null) return;
       L.marker([s.lat, s.lon], { icon: pin(i + 1), zIndexOffset: 1000 })
@@ -158,7 +173,7 @@ export default function MapView(props: Props) {
         .bindTooltip(escapar(s.nombre), { direction: 'top', offset: [0, -34] })
         .addTo(layer);
     });
-  }, [seleccionados]);
+  }, [seleccionados, ruta]);
 
   // Reencuadrar cuando se pide
   useEffect(() => {
@@ -190,7 +205,7 @@ export default function MapView(props: Props) {
       const zoom = Math.max(map.getZoom() || 0, 16);
       if (size.x === 0 || size.y === 0) {
         // mapa oculto (pestaña Lista en celular): se centrará al mostrarse
-        pendienteRef.current = ll;
+        pendienteRef.current = () => map.setView(ll, zoom);
         return;
       }
       // En escritorio la ficha tapa ~480px a la derecha: desplazar el centro
@@ -205,11 +220,11 @@ export default function MapView(props: Props) {
     const map = mapRef.current;
     if (!map) return;
     const onResize = () => {
-      const ll = pendienteRef.current;
+      const accion = pendienteRef.current;
       const s = map.getSize();
-      if (ll && s.x > 0 && s.y > 0) {
+      if (accion && s.x > 0 && s.y > 0) {
         pendienteRef.current = null;
-        map.setView(ll, Math.max(map.getZoom() || 0, 16));
+        accion();
       }
     };
     map.on('resize', onResize);
@@ -217,6 +232,60 @@ export default function MapView(props: Props) {
       map.off('resize', onResize);
     };
   }, []);
+
+  // Ruta óptima: línea por las calles, origen y paradas numeradas en orden de visita
+  useEffect(() => {
+    const map = mapRef.current;
+    const layer = rutaLayerRef.current;
+    if (!map || !layer) return;
+    layer.clearLayers();
+    if (!ruta) return;
+    L.polyline(ruta.linea, { color: '#fff', weight: 9, opacity: 0.9 }).addTo(layer);
+    const linea = L.polyline(ruta.linea, { color: '#1d4ed8', weight: 5, opacity: 0.95 }).addTo(layer);
+    L.circleMarker([ruta.origen.lat, ruta.origen.lon], HALO).addTo(layer);
+    L.circleMarker([ruta.origen.lat, ruta.origen.lon], {
+      radius: 9, color: '#fff', weight: 3, fillColor: '#2563eb', fillOpacity: 1,
+    })
+      .bindTooltip('Usted está aquí', { direction: 'top', offset: [0, -8] })
+      .addTo(layer);
+    ruta.paradas.forEach((p, i) => {
+      L.marker([p.lat!, p.lon!], { icon: pin(i + 1, '#1d4ed8'), zIndexOffset: 1500 })
+        .bindTooltip(escapar(p.nombre), { direction: 'top', offset: [0, -34] })
+        .on('click', () => cbRef.current.onAbrir(p.id))
+        .addTo(layer);
+    });
+    const encuadrar = () => {
+      const alto = map.getSize().y;
+      // dejar libre la parte inferior, donde está el panel de la ruta
+      map.fitBounds(linea.getBounds(), {
+        paddingTopLeft: [30, 30],
+        paddingBottomRight: [30, window.innerWidth >= 1024 ? 30 : Math.round(alto * 0.45)],
+        maxZoom: 17,
+      });
+    };
+    const s = map.getSize();
+    if (s.x === 0 || s.y === 0) pendienteRef.current = encuadrar;
+    else encuadrar();
+  }, [ruta]);
+
+  // Ubicación actual (botón "Mi ubicación")
+  useEffect(() => {
+    const map = mapRef.current;
+    const layer = ubicLayerRef.current;
+    if (!map || !layer) return;
+    layer.clearLayers();
+    if (!ubicacion || ruta) return; // con ruta, el origen ya se dibuja en la ruta
+    L.circleMarker([ubicacion.lat, ubicacion.lon], HALO).addTo(layer);
+    L.circleMarker([ubicacion.lat, ubicacion.lon], {
+      radius: 9, color: '#fff', weight: 3, fillColor: '#2563eb', fillOpacity: 1,
+    })
+      .bindTooltip('Usted está aquí', { direction: 'top', offset: [0, -8] })
+      .addTo(layer);
+    const ir = () => map.setView([ubicacion.lat, ubicacion.lon], 15);
+    const s = map.getSize();
+    if (s.x === 0 || s.y === 0) pendienteRef.current = ir;
+    else ir();
+  }, [ubicacion, ruta]);
 
   return <div ref={divRef} className="h-full w-full" />;
 }
