@@ -86,7 +86,7 @@ Se toma el **estilo** de la referencia, pero no el escudo ni la marca "gob.pe", 
     - tarjeta de acceso blanca con título negro y botón rojo;
     - fondo gris claro y pie gris con "© 2026 APLICACIONES DONET".
 29. [x] **Títulos en negro**: los títulos de las secciones de la ficha y de los paneles pasan de gris en mayúsculas a negro.
-30. [ ] **Verificar y publicar**: pruebas en escritorio y celular, commit, push y verificación en producción.
+30. [x] **Verificar y publicar**: pruebas en escritorio y celular, commit, push y verificación en producción.
 
 Se hará un commit antes y después de cada tarea importante.
 
@@ -140,6 +140,15 @@ Se hará un commit antes y después de cada tarea importante.
   - Tabla de servicios del local más ancha que el celular.
   - En las pruebas: selector ambiguo del panel de ruta, y borrado de campos que en React o en modo táctil no funcionaba.
 - **Publicación segura**: primero se desplegó la app con login (la base aún aceptaba a los autenticados) y después se cerró el acceso anónimo. Así no hubo corte de servicio.
+
+### Revisión de las tareas 27 a 30 (estilo institucional)
+- Se rediseñó siguiendo la página de referencia: **blanco con acento rojo y títulos en negro**.
+  - **Cabecera de la app**: blanca con franja roja, emblema rojo, título negro con "· MINEDU" en rojo y botón Salir con borde rojo.
+  - **Pantalla de inicio**: banda roja, encabezado blanco con el título grande en negro, cuerpo gris claro con la tarjeta de acceso, botón rojo y pie gris.
+  - **Ficha y filtros**: títulos en negro (con filete rojo en la ficha) y etiquetas en negro.
+- Se toma el **estilo**, pero no el escudo ni la marca "gob.pe", para no hacer pasar la app por un portal oficial.
+- **Corrección menor**: el filtro de modalidad mostraba "Superior – Superior".
+- **Verificado en producción**: inicio de sesión (7 comprobaciones), modalidades, ruta y prueba general en escritorio, tablet y celular, sin errores de consola.
 
 ### Pendientes y observaciones
 - Los 2 primeros commits, que ya estaban en GitHub, conservan el autor `pecepeperu2026-ops`. Cambiarlos requiere reescribir el historial remoto (*force push*), que solo se hará si el usuario lo pide.

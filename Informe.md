@@ -202,7 +202,10 @@ Los filtros disponibles son departamento, provincia, distrito, UGEL, texto o có
   - Un usuario que se registrara por su cuenta **no tendría rol** y vería 0 registros. Se probó en producción con un usuario temporal, que luego se eliminó.
   - Nadie puede insertar, modificar ni borrar con la clave pública.
 - La clave de servicio y la cadena de conexión **nunca** llegan al navegador ni al repositorio: están en `.env` y `.env.supabase`, que git ignora.
-- **Marca:** la pantalla de inicio usa colores institucionales y el texto "MINEDU – datos oficiales ESCALE" como fuente. El emblema es propio (birrete) y **no** reproduce el logotipo oficial del Ministerio, cuyo uso requiere autorización. El pie dice "© 2026 APLICACIONES DONET – Soluciones Empresariales".
+- **Marca y estilo:** diseño institucional sobrio, blanco con acento rojo y títulos en negro.
+  - La pantalla de inicio tiene una banda roja, un encabezado blanco con el título en negro y una tarjeta de acceso.
+  - La app tiene una cabecera blanca con franja roja.
+  - Se cita "MINEDU – datos oficiales ESCALE" como fuente. El emblema es propio (birrete) y **no** reproduce el logotipo oficial del Ministerio, cuyo uso requiere autorización. El pie dice "© 2026 APLICACIONES DONET – Soluciones Empresariales".
 
 ---
 
