@@ -21,7 +21,7 @@ export default function Sesion() {
 
   if (!configurado) return <App usuario={null} onSalir={() => {}} />; // muestra el aviso de configuración
   if (sesion === undefined) {
-    return <div className="grid h-dvh place-items-center bg-[#C8102E] text-sm text-white">Verificando sesión…</div>;
+    return <div className="grid h-dvh place-items-center border-t-[6px] border-[#C1121F] bg-[#F2F3F5] text-sm text-slate-600">Verificando sesión…</div>;
   }
   if (!sesion) return <Login />;
   return <App usuario={usuarioDe(sesion)} onSalir={cerrarSesion} />;

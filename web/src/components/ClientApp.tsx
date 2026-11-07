@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 const Sesion = dynamic(() => import('./Sesion'), {
   ssr: false,
   loading: () => (
-    <div className="grid h-dvh place-items-center bg-[#C8102E] text-sm text-white">Cargando…</div>
+    <div className="grid h-dvh place-items-center border-t-[6px] border-[#C1121F] bg-[#F2F3F5] text-sm text-slate-600">Cargando…</div>
   ),
 });
 

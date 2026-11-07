@@ -52,7 +52,7 @@ function Select({
 }) {
   return (
     <label className="block min-w-0">
-      <span className="mb-0.5 block text-[11px] font-medium uppercase tracking-wide text-slate-500">{label}</span>
+      <span className="mb-0.5 block text-xs font-semibold text-slate-800">{label}</span>
       <select
         value={value}
         disabled={disabled}
@@ -485,31 +485,41 @@ export default function App({ usuario, onSalir }: { usuario: Usuario | null; onS
   return (
     <div className="flex h-dvh flex-col bg-slate-100 text-slate-900">
       {/* Encabezado */}
-      <header className="flex shrink-0 items-center gap-3 bg-gradient-to-r from-red-700 to-red-600 px-4 py-2.5 text-white shadow">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-          <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zm-7 9.18v4L12 20l7-3.82v-4L12 16l-7-3.82z" />
-        </svg>
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-base font-bold leading-tight sm:text-lg">MINEDU · Colegios del Perú</h1>
-          <p className="truncate text-[11px] text-red-100">
-            Datos oficiales ESCALE · Padrón oct-2026 · Censo 2025 · <b className="text-white">APLICACIONES DONET</b>
-          </p>
-        </div>
-        {usuario && (
-          <div className="flex shrink-0 items-center gap-2">
-            <div className="hidden text-right leading-tight sm:block">
-              <div className="text-sm font-semibold">👤 {usuario.usuario}</div>
-              <div className="text-[11px] text-red-100">{usuario.rol ? ROL_LABEL[usuario.rol] : 'Sin rol asignado'}</div>
-            </div>
-            <button
-              onClick={onSalir}
-              title={`Cerrar sesión de ${usuario.usuario}`}
-              className="rounded-lg bg-white/15 px-3 py-1.5 text-sm font-semibold ring-1 ring-white/30 hover:bg-white/25"
-            >
-              Salir
-            </button>
+      {/* Cabecera institucional: blanca, con franja y acentos rojos y títulos en negro */}
+      <header className="shrink-0 border-b border-slate-200 bg-white shadow-sm">
+        <div className="h-1.5 bg-[#C1121F]" aria-hidden />
+        <div className="flex items-center gap-3 px-4 py-2">
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#C1121F] text-white">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+              <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zm-7 9.18v4L12 20l7-3.82v-4L12 16l-7-3.82z" />
+            </svg>
           </div>
-        )}
+          <div className="hidden h-8 w-px bg-slate-200 sm:block" aria-hidden />
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-base font-bold leading-tight text-slate-900 sm:text-lg">
+              Colegios del Perú <span className="font-semibold text-[#C1121F]">· MINEDU</span>
+            </h1>
+            <p className="truncate text-[11px] text-slate-500">
+              Datos oficiales ESCALE · Padrón oct-2026 · Censo 2025 ·{' '}
+              <b className="font-semibold text-slate-700">APLICACIONES DONET</b>
+            </p>
+          </div>
+          {usuario && (
+            <div className="flex shrink-0 items-center gap-3">
+              <div className="hidden text-right leading-tight sm:block">
+                <div className="text-sm font-semibold text-slate-900">{usuario.usuario}</div>
+                <div className="text-[11px] text-slate-500">{usuario.rol ? ROL_LABEL[usuario.rol] : 'Sin rol asignado'}</div>
+              </div>
+              <button
+                onClick={onSalir}
+                title={`Cerrar sesión de ${usuario.usuario}`}
+                className="rounded-md border border-[#C1121F] px-3 py-1.5 text-sm font-semibold text-[#C1121F] transition hover:bg-[#C1121F] hover:text-white"
+              >
+                Salir
+              </button>
+            </div>
+          )}
+        </div>
       </header>
 
       <div className="relative flex min-h-0 flex-1 flex-col pb-[calc(3rem+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-[440px_1fr] lg:pb-0">
@@ -565,7 +575,11 @@ export default function App({ usuario, onSalir }: { usuario: Usuario | null; onS
                 value={filtros.modalidad}
                 onChange={(v) => set('modalidad', v)}
                 todos="Todas"
-                opciones={MODALIDADES.map((m) => ({ value: m.value, label: `${m.corto} – ${m.value.replace('Educación ', '')}` }))}
+                opciones={MODALIDADES.map((m) => {
+                  const nombre = m.value.replace('Educación ', '');
+                  // "Superior": la sigla y el nombre coinciden, no se repite
+                  return { value: m.value, label: m.corto === nombre ? nombre : `${m.corto} – ${nombre}` };
+                })}
               />
               <Select
                 label="Nivel / ciclo"

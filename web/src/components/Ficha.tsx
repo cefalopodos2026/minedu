@@ -29,7 +29,7 @@ function Fila({ k, v, mono }: { k: string; v: React.ReactNode; mono?: boolean })
 function Seccion({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-4">
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{titulo}</h3>
+      <h3 className="mb-2 border-l-4 border-[#C1121F] pl-2 text-base font-bold leading-tight text-slate-900">{titulo}</h3>
       {children}
     </section>
   );
