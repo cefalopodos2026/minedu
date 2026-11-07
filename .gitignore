@@ -1,0 +1,28 @@
+# Dependencias y builds
+node_modules/
+web/.next/
+web/out/
+*.tsbuildinfo
+
+# Secretos y credenciales (NUNCA versionar)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+.vercel/
+.supabase/
+supabase/.temp/
+credentials*.json
+*secret*
+*token*
+
+# Datos pesados (se regeneran con scripts/etl.mjs desde ESCALE)
+data/raw/
+data/out/
+
+# Archivos locales de prueba
+scripts/.pglite/
+scripts/*.log
+*.log

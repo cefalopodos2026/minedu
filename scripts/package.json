@@ -1,0 +1,18 @@
+{
+  "name": "minedu-etl",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "etl": "node etl.mjs ../data/raw/padron/Padron_web.dbf ../data/raw/censo2025/00_Padron/Padron.dbf ../data/out",
+    "load": "node load.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.119.0",
+    "pg": "^8.23.1",
+    "pg-copy-streams": "^7.0.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.15",
+    "puppeteer-core": "^25.16.0"
+  }
+}
