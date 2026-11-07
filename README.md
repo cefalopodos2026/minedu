@@ -81,7 +81,10 @@ También puede desplegar desde la terminal: `cd web && npx vercel --prod`.
 
 ## Funcionalidades
 
-- Filtros en cascada Departamento → Provincia → Distrito, más UGEL, nivel/modalidad, gestión, turno (diurno/nocturno/día y noche), área y estado.
+- Filtros en cascada Departamento → Provincia → Distrito, más UGEL, gestión, turno (diurno/nocturno/día y noche), área y estado.
+- **Modalidad y nivel**: Educación Básica Regular (Inicial, Primaria, Secundaria), Básica Especial, Básica Alternativa, Técnico-Productiva y Superior (Tecnológica, Pedagógica, Artística), según el código oficial `NIV_MOD`.
+- Cada colegio muestra su **código modular**, **código de local** y **dirección exacta**.
+- **Alumnado por cada turno** (Mañana, Tarde, Noche y combinaciones), en el resumen del filtro y por local escolar en la ficha.
 - Búsqueda por nombre (sin importar tildes ni mayúsculas), por código modular o por código de local.
 - Resumen del filtro: número de colegios y locales, alumnos 2025, alumnado diurno, nocturno y mixto, docentes y colegios con teléfono.
 - **Ruta óptima desde mi ubicación** (GPS del celular) hasta uno o varios colegios, en auto o a pie, trazada por las calles. Muestra tiempo y distancia, y el botón *Navegar* la abre en Google Maps.

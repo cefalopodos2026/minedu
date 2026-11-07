@@ -25,6 +25,17 @@ ok(!pts.error && pts.data.length > 1000, `puntos del mapa en SJL: ${pts.data?.le
 const [uno] = await t(() => sb.from('iiee').select('id,nombre,director').eq('id', '0415638-0').maybeSingle());
 ok(uno.data?.id === '0415638-0', `lectura directa por id: ${uno.data?.nombre} / ${uno.data?.director}`);
 
+// Modalidades, código de local y alumnado por turno
+const [sup] = await t(() => sb.rpc('buscar_iiee', { p_dpto: '04', p_modalidad: 'Educación Superior', p_subnivel: 'Tecnológica', p_estado: 'Activo', p_limit: 2 }));
+ok(!sup.error && sup.data.length === 2 && sup.data.every((r) => r.subnivel === 'Tecnológica' && r.codlocal),
+  `filtro Superior Tecnológica (Arequipa): ${sup.data?.map((r) => `${r.nombre} [local ${r.codlocal}]`).join(' | ')}`);
+const [lima] = await t(() => sb.rpc('resumen_iiee', { p_prov: '1501', p_estado: 'Activo' }));
+const turnos = Object.entries(lima.data?.por_turno ?? {});
+ok(turnos.length >= 5 && turnos.reduce((a, [, v]) => a + v.alumnos, 0) === lima.data.alumnos,
+  `alumnado por turno en Lima suma el total (${turnos.map(([k, v]) => `${k}: ${v.alumnos}`).join(', ')})`);
+ok((lima.data?.por_modalidad ?? []).some((m) => m.modalidad === 'Educación Básica Regular' && m.subnivel === 'Secundaria'),
+  `por modalidad: ${(lima.data?.por_modalidad ?? []).length} combinaciones modalidad/nivel`);
+
 // Escritura: debe estar PROHIBIDA para la clave pública
 const ins = await sb.from('iiee').insert({ id: 'X-0', cod_mod: 'X', anexo: '0', nombre: 'PRUEBA', nombre_norm: 'PRUEBA' });
 ok(!!ins.error, `insertar con clave pública bloqueado (${ins.error?.code ?? 'sin error!'})`);

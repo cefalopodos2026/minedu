@@ -148,7 +148,18 @@ Es una arquitectura **serverless y de bajo costo**: no hay un servidor propio qu
    - se eliminan los duplicados;
    - cada número se clasifica: es **celular** si tiene 9 dígitos y empieza con 9; si no, es **fijo**;
    - a los fijos sin código de ciudad se les añade el que corresponde al departamento (por ejemplo `427545` en Áncash pasa a `043-427545`).
-7. **Clasificación del turno:** *Diurno* (mañana o tarde), *Nocturno* (solo noche) o *Día y noche* (por ejemplo Mañana-Tarde-Noche). Con esto se calcula el **alumnado diurno y nocturno**.
+7. **Clasificación del turno:** *Diurno* (mañana o tarde), *Nocturno* (solo noche) o *Día y noche* (por ejemplo Mañana-Tarde-Noche). Con esto se calcula el **alumnado diurno y nocturno**. También se informa el **alumnado por cada turno** exacto: Mañana, Tarde, Noche, Mañana-Tarde, Mañana-Noche, Tarde-Noche y Mañana-Tarde-Noche.
+8. **Modalidad y nivel:** se derivan del código oficial `NIV_MOD` del padrón. Los 180,943 servicios quedan clasificados, sin excepción:
+
+| Modalidad | Nivel / ciclo | Códigos ESCALE | Servicios |
+|---|---|---|---|
+| Educación Básica Regular (EBR) | Inicial · Primaria · Secundaria | A1–A5 · B0 · F0 | 100,070 · 48,096 · 19,367 |
+| Educación Básica Especial (EBE) | Inicial · Primaria · General | E1 · E2 · E0 | 420 · 500 · 328 |
+| Educación Básica Alternativa (EBA) | Inicial e Intermedio · Avanzado · General · Primaria y Secundaria de adultos | D1 · D2 · D0 · C0 · G0 | 1,205 · 1,822 · 120 · 955 · 907 |
+| Educación Técnico-Productiva (ETP) | CETPRO · Educación ocupacional | L0 · L1–L9 | 2,715 · 2,365 |
+| Educación Superior | Tecnológica · Pedagógica · Artística | T0, S0 · K0, P0 · M0 | 1,618 · 406 · 49 |
+
+9. **Dirección exacta:** se compone la vía y el número, la localidad, el centro poblado, el distrito, la provincia y el departamento, eliminando las partes repetidas.
 
 ---
 
@@ -156,7 +167,7 @@ Es una arquitectura **serverless y de bajo costo**: no hay un servidor propio qu
 
 ### 5.1 Modelo
 
-- **`iiee`**: 53 columnas, una fila por servicio educativo. La clave primaria es `id = cod_mod-anexo`.
+- **`iiee`**: 57 columnas, una fila por servicio educativo. La clave primaria es `id = cod_mod-anexo`. Incluye las columnas `modalidad`, `subnivel`, `telefono_fijo` y `celular`. El esquema es idempotente: con `alter table ... add column if not exists` agrega columnas nuevas también a bases ya creadas.
 - **`ubigeo`**: catálogo de distritos con departamento y provincia.
 
 ### 5.2 Índices
@@ -170,10 +181,10 @@ Es una arquitectura **serverless y de bajo costo**: no hay un servidor propio qu
 | Función | Devuelve |
 |---|---|
 | `buscar_iiee(filtros, límite, desplazamiento)` | Lista paginada de colegios |
-| `resumen_iiee(filtros)` | Totales: colegios, locales, alumnos, alumnado diurno, nocturno y mixto, docentes, secciones y colegios con teléfono |
+| `resumen_iiee(filtros)` | Totales: colegios, locales, alumnos, alumnado diurno, nocturno y mixto, docentes, secciones y colegios con teléfono. Además, **alumnado y servicios por cada turno** (`por_turno`) y **por modalidad y nivel** (`por_modalidad`) |
 | `puntos_iiee(filtros, máximo)` | Coordenadas compactas para el mapa (hasta 15,000 puntos) |
 
-Los filtros disponibles son departamento, provincia, distrito, UGEL, texto o código, nivel, gestión, turno, estado y área.
+Los filtros disponibles son departamento, provincia, distrito, UGEL, texto o código, **modalidad**, **nivel/ciclo**, nivel detallado, gestión, turno, estado y área.
 
 ### 5.4 Seguridad
 
@@ -187,7 +198,10 @@ Los filtros disponibles son departamento, provincia, distrito, UGEL, texto o có
 | Módulo | Detalle |
 |---|---|
 | **Filtros geográficos** | Departamento → Provincia → Distrito en cascada, y UGEL |
-| **Filtros adicionales** | Nivel/modalidad (21), gestión pública o privada, turno (diurno, nocturno, día y noche), área urbana o rural, estado activo o inactivo |
+| **Modalidad y nivel** | **EBR** (Inicial, Primaria, Secundaria), **Básica Especial**, **Básica Alternativa**, **Técnico-Productiva** y **Superior** (Tecnológica, Pedagógica, Artística). El nivel/ciclo depende de la modalidad elegida |
+| **Filtros adicionales** | Nivel detallado de ESCALE (21), gestión pública o privada, turno (diurno, nocturno, día y noche), área urbana o rural, estado activo o inactivo |
+| **Datos en la lista** | Modalidad y nivel, **dirección exacta**, **código modular**, **código de local**, turno, teléfonos, director y alumnos |
+| **Alumnado por turno** | En el resumen, tablas de alumnado por **cada turno** y por modalidad y nivel. En la ficha, alumnado del local escolar por turno y por servicio |
 | **Búsqueda** | Por nombre (ignora tildes y mayúsculas), código modular o código de local |
 | **Resumen** | Indicadores del filtro actual: colegios, locales, alumnos, alumnado diurno, nocturno y mixto, docentes y colegios con teléfono |
 | **Ficha del colegio** | Barra de acciones rápidas (Elegir, Ruta, Mapa, WhatsApp, Enlace); identificación; contacto (director, fijo y celular para llamar, WhatsApp al celular, correo, web); ubicación con enlaces a Google Maps y "Cómo llegar", alumnado y docentes 2025, y servicios del mismo local con sus turnos y totales día/noche |

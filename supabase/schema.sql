@@ -70,6 +70,15 @@ create table if not exists public.iiee (
   en_censo_2025       boolean default false
 );
 
+-- Columnas agregadas después de la primera versión: "create table if not exists" no las añade
+-- a una tabla que ya existe, así que se agregan aquí (idempotente).
+alter table public.iiee
+  add column if not exists telefono_fijo text,
+  add column if not exists celular       text,
+  add column if not exists modalidad     text,
+  add column if not exists subnivel      text;
+create index if not exists iiee_modalidad_idx on public.iiee (modalidad, subnivel);
+
 create index if not exists iiee_cod_mod_idx   on public.iiee (cod_mod);
 create index if not exists iiee_codlocal_idx  on public.iiee (codlocal);
 create index if not exists iiee_ubigeo_idx    on public.iiee (ubigeo);
