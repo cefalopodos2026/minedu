@@ -104,7 +104,7 @@ create or replace function public.filtrar_iiee(
   p_dpto text default null, p_prov text default null, p_dist text default null,
   p_q text default null, p_nivel text default null, p_gestion text default null,
   p_turno text default null, p_estado text default null, p_area text default null,
-  p_ugel text default null
+  p_ugel text default null, p_modalidad text default null, p_subnivel text default null
 ) returns setof public.iiee
 language sql stable
 set search_path = public
@@ -115,6 +115,8 @@ as $$
     and (p_dist is null or i.ubigeo   = p_dist)
     and (p_ugel is null or i.codooii  = p_ugel)
     and (p_nivel is null or i.nivel   = p_nivel)
+    and (p_modalidad is null or i.modalidad = p_modalidad)
+    and (p_subnivel is null or i.subnivel = p_subnivel)
     and (p_turno is null or i.turno_grupo = p_turno)
     and (p_estado is null or i.estado = p_estado)
     and (p_area is null or i.area = p_area)
@@ -131,12 +133,12 @@ create or replace function public.buscar_iiee(
   p_dpto text default null, p_prov text default null, p_dist text default null,
   p_q text default null, p_nivel text default null, p_gestion text default null,
   p_turno text default null, p_estado text default null, p_area text default null,
-  p_ugel text default null, p_limit int default 50, p_offset int default 0
+  p_ugel text default null, p_modalidad text default null, p_subnivel text default null, p_limit int default 50, p_offset int default 0
 ) returns setof public.iiee
 language sql stable
 set search_path = public
 as $$
-  select * from public.filtrar_iiee(p_dpto, p_prov, p_dist, p_q, p_nivel, p_gestion, p_turno, p_estado, p_area, p_ugel) f
+  select * from public.filtrar_iiee(p_dpto, p_prov, p_dist, p_q, p_nivel, p_gestion, p_turno, p_estado, p_area, p_ugel, p_modalidad, p_subnivel) f
   order by f.departamento, f.provincia, f.distrito, f.nombre_norm, f.cod_mod, f.anexo
   limit least(greatest(p_limit, 1), 1000) offset greatest(p_offset, 0);
 $$;
@@ -146,12 +148,26 @@ create or replace function public.resumen_iiee(
   p_dpto text default null, p_prov text default null, p_dist text default null,
   p_q text default null, p_nivel text default null, p_gestion text default null,
   p_turno text default null, p_estado text default null, p_area text default null,
-  p_ugel text default null
+  p_ugel text default null, p_modalidad text default null, p_subnivel text default null
 ) returns json
 language sql stable
 set search_path = public
 as $$
+  with f as (
+    select * from public.filtrar_iiee(p_dpto, p_prov, p_dist, p_q, p_nivel, p_gestion, p_turno, p_estado, p_area, p_ugel, p_modalidad, p_subnivel)
+  )
   select json_build_object(
+    -- alumnado por cada turno: { "Mañana": {servicios, alumnos}, "Noche": {...}, ... }
+    'por_turno', (
+      select coalesce(json_object_agg(t.turno, json_build_object('servicios', t.n, 'alumnos', t.a) order by t.a desc), '{}'::json)
+      from (select coalesce(turno, 'Sin turno') turno, count(*) n, coalesce(sum(talum), 0) a from f group by 1) t
+    ),
+    -- servicios y alumnado por modalidad y subnivel
+    'por_modalidad', (
+      select coalesce(json_agg(json_build_object('modalidad', m.modalidad, 'subnivel', m.subnivel, 'servicios', m.n, 'alumnos', m.a)
+                               order by m.modalidad, m.subnivel), '[]'::json)
+      from (select modalidad, subnivel, count(*) n, coalesce(sum(talum), 0) a from f group by 1, 2) m
+    ),
     'total',            count(*),
     'locales',          count(distinct f.codlocal),
     'con_coordenadas',  count(*) filter (where f.lat is not null),
@@ -165,7 +181,7 @@ as $$
     'docentes',         coalesce(sum(f.tdoc), 0),
     'secciones',        coalesce(sum(f.tsec), 0)
   )
-  from public.filtrar_iiee(p_dpto, p_prov, p_dist, p_q, p_nivel, p_gestion, p_turno, p_estado, p_area, p_ugel) f;
+  from f;
 $$;
 
 -- Puntos para el mapa (máx. p_max) en un solo JSON compacto
@@ -173,7 +189,7 @@ create or replace function public.puntos_iiee(
   p_dpto text default null, p_prov text default null, p_dist text default null,
   p_q text default null, p_nivel text default null, p_gestion text default null,
   p_turno text default null, p_estado text default null, p_area text default null,
-  p_ugel text default null, p_max int default 8000
+  p_ugel text default null, p_modalidad text default null, p_subnivel text default null, p_max int default 8000
 ) returns json
 language sql stable
 set search_path = public
@@ -181,7 +197,7 @@ as $$
   select coalesce(json_agg(json_build_array(p.id, p.lat, p.lon, p.nombre, p.nivel, p.turno_grupo)), '[]'::json)
   from (
     select f.id, f.lat, f.lon, f.nombre, f.nivel, f.turno_grupo
-    from public.filtrar_iiee(p_dpto, p_prov, p_dist, p_q, p_nivel, p_gestion, p_turno, p_estado, p_area, p_ugel) f
+    from public.filtrar_iiee(p_dpto, p_prov, p_dist, p_q, p_nivel, p_gestion, p_turno, p_estado, p_area, p_ugel, p_modalidad, p_subnivel) f
     where f.lat is not null and f.lon is not null
     limit least(greatest(p_max, 1), 20000)
   ) p;
