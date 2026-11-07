@@ -36,16 +36,16 @@ Clasificación oficial por el código `NIV_MOD` del padrón:
 | Educación Técnico-Productiva (ETP) | CETPRO / Educación ocupacional | L0 / L1–L9 |
 | Educación Superior | Tecnológica / Pedagógica / Artística | T0, S0 / K0, P0 / M0 |
 
-15. [ ] **ETL y esquema**: crear las columnas `modalidad` y `subnivel`, derivadas de `nivel_cod`.
-16. [ ] **SQL**:
+15. [x] **ETL y esquema**: crear las columnas `modalidad` y `subnivel`, derivadas de `nivel_cod`.
+16. [x] **SQL**:
     - nuevo filtro `p_modalidad`;
     - el resumen agrega el **alumnado por cada turno** (Mañana, Tarde, Noche, Mañana-Tarde, Mañana-Noche, Tarde-Noche, Mañana-Tarde-Noche) y el **número de servicios y alumnos por modalidad**.
-17. [ ] **Lista de resultados**: mostrar el código modular, el **código de local**, la **dirección exacta** y la modalidad y subnivel.
-18. [ ] **Filtros**: agregar un filtro "Modalidad", que hace que el filtro "Nivel" muestre solo los niveles de esa modalidad.
-19. [ ] **Resumen y ficha**:
+17. [x] **Lista de resultados**: mostrar el código modular, el **código de local**, la **dirección exacta** y la modalidad y subnivel.
+18. [x] **Filtros**: agregar un filtro "Modalidad", que hace que el filtro "Nivel" muestre solo los niveles de esa modalidad.
+19. [x] **Resumen y ficha**:
     - tablas "Alumnado por turno" y "Por modalidad" en el resumen;
     - en la ficha: modalidad, subnivel, **dirección exacta** completa y alumnado del local por cada turno.
-20. [ ] **Publicar**:
+20. [x] **Publicar**:
     - recargar Supabase y verificarla;
     - pruebas en escritorio y celular;
     - CSV y WhatsApp con los campos nuevos;

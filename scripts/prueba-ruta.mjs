@@ -39,7 +39,10 @@ await nav[2].tap(); // Ruta
 await p.waitForFunction(() => document.body.innerText.includes('Ruta óptima a'), { timeout: 60000 });
 await espera(2500);
 await p.screenshot({ path: path.join(out, 'r1_ruta_auto.png') });
-const resumenAuto = await p.evaluate(() => document.querySelector('[aria-expanded]')?.textContent);
+// resumen del panel de ruta (botón con aria-expanded que contiene "Ruta óptima a")
+const leerRuta = () =>
+  p.evaluate(() => [...document.querySelectorAll('[aria-expanded]')].find((e) => e.textContent.includes('Ruta óptima a'))?.textContent);
+const resumenAuto = await leerRuta();
 
 // 2) cambiar a "A pie"
 await p.evaluate(() => [...document.querySelectorAll('button')].find((b) => b.textContent.includes('A pie'))?.click());
@@ -50,7 +53,7 @@ await p.waitForFunction(
 );
 await espera(1500);
 await p.screenshot({ path: path.join(out, 'r2_ruta_pie.png') });
-const resumenPie = await p.evaluate(() => document.querySelector('[aria-expanded]')?.textContent);
+const resumenPie = await leerRuta();
 
 // 3) compartir la ruta por WhatsApp
 await p.evaluate(() =>
