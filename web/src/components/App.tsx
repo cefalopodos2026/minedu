@@ -113,7 +113,9 @@ function Tarjeta({
               {ie.turno}
             </span>
           )}
-          {ie.telefono && <span>☎ {ie.telefono}</span>}
+          {ie.telefono_fijo && <span>☎ {ie.telefono_fijo}</span>}
+          {ie.celular && <span>📱 {ie.celular}</span>}
+          {!ie.telefono_fijo && !ie.celular && ie.telefono && <span>☎ {ie.telefono}</span>}
           {ie.lat == null && <span className="text-amber-700">Sin coordenadas</span>}
         </div>
         {ie.director && <p className="mt-0.5 truncate text-xs text-slate-500">Dir.: {ie.director}</p>}

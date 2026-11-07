@@ -26,7 +26,9 @@ create table if not exists public.iiee (
   gestion             text,
   dependencia         text,
   director            text,
-  telefono            text,
+  telefono            text,                      -- texto original (padrón 2026; si falta, Censo 2025)
+  telefono_fijo       text,                      -- fijos normalizados con código de ciudad: "043-427545 / ..."
+  celular             text,                      -- celulares normalizados: "942 787 334 / ..."
   email               text,
   pagweb              text,
   direccion           text,

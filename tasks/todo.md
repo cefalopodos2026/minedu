@@ -21,6 +21,12 @@ Objetivo: publicar el aplicativo "Colegios del Perú" (ya construido y probado e
 9. [x] **Informe.md**: informe profesional del proyecto (arquitectura, lenguajes, frontend, backend, datos, seguridad y despliegue).
 10. [ ] **Revisión**: añadir la sección de revisión a este archivo y hacer el commit final.
 
+### Nuevos pedidos del usuario (07-11-2026)
+11. [x] **Teléfonos fijo y celular**: unir los números del Padrón web 2026 (prioridad, el más reciente) con los del Censo 2025, eliminar duplicados, clasificar cada número como **fijo** o **celular** y añadir el código de ciudad a los fijos que no lo tengan. Se crean las columnas `telefono_fijo` y `celular`. La ficha muestra cada tipo con su botón para llamar, y los celulares con su botón de WhatsApp.
+12. [ ] **Mi ubicación y ruta óptima**: obtener la ubicación del celular (GPS del navegador) y trazar en el mapa de calles la ruta hasta un colegio o varios. Con varios colegios se calcula el **orden óptimo de visita**. El modo puede ser auto o a pie y se muestran distancia y tiempo. Un botón abre la navegación paso a paso en Google Maps.
+13. [ ] **Compartir por WhatsApp**: enviar el colegio o los seleccionados (datos clave, teléfonos y ubicación) y la ruta.
+14. [ ] **Presentación ágil en celular**: barra inferior con Lista / Mapa / Ruta, botones grandes y acciones rápidas en la ficha.
+
 Se hará un commit antes y después de cada tarea importante.
 
 ## Revisión

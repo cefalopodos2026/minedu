@@ -14,6 +14,8 @@ export interface IIEE {
   dependencia: string | null;
   director: string | null;
   telefono: string | null;
+  telefono_fijo: string | null;
+  celular: string | null;
   email: string | null;
   pagweb: string | null;
   direccion: string | null;

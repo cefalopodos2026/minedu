@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { records } from './dbf.mjs';
 import { cp850 } from './cp850.mjs';
+import { unirTelefonos } from './telefonos.mjs';
 
 const [padronWeb, padronCenso, outDir] = process.argv.slice(2);
 fs.mkdirSync(outDir, { recursive: true });
@@ -35,14 +36,14 @@ const censo = new Map();
 for (const r of records(padronCenso)) {
   censo.set(`${r.COD_MOD}-${r.ANEXO}`, {
     talum: r.TALUM, talum_hom: r.TALUM_HOM, talum_muj: r.TALUM_MUJ,
-    tdoc: r.TDOC, tsec: r.TSEC, caracteristica: nn(r.D_COD_CAR),
+    tdoc: r.TDOC, tsec: r.TSEC, caracteristica: nn(r.D_COD_CAR), tel: nn(r.TELEFONO),
     grad_urbano: nn(r.GRAD_2000), vraem: r.VRAEM === '1', zona_frontera: r.ZFRONTERA === '1',
   });
 }
 console.log('censo 2025:', censo.size);
 
 const COLS = ['id','cod_mod','anexo','codinst','codlocal','nombre','nombre_norm','nivel_cod','nivel','forma',
-  'sexo','gestion_cod','gestion','dependencia','director','telefono','email','pagweb','direccion','localidad',
+  'sexo','gestion_cod','gestion','dependencia','director','telefono','telefono_fijo','celular','email','pagweb','direccion','localidad',
   'centro_poblado','codcp_inei','area','ubigeo','cod_dpto','cod_prov','departamento','provincia','distrito',
   'dre','codooii','ugel','lat','lon','tipo_programa','turno','turno_grupo','ruc','razon_social','promotor',
   'estado','fecha_registro','fecha_actualizacion','talum','talum_hom','talum_muj','tdoc','tsec',
@@ -57,7 +58,7 @@ const out = fs.createWriteStream(path.join(outDir, 'iiee.csv'));
 out.write(COLS.join(',') + '\n');
 const ubigeo = new Map();
 const seen = new Set();
-let n = 0, dup = 0, conCenso = 0, conCoord = 0, conTel = 0;
+let n = 0, dup = 0, conCenso = 0, conCoord = 0, conTel = 0, conFijo = 0, conCel = 0;
 
 for (const r of records(padronWeb, { decoder: cp850 })) {
   const id = `${r.COD_MOD}-${r.ANEXO}`;
@@ -68,12 +69,18 @@ for (const r of records(padronWeb, { decoder: cp850 })) {
   const lat = r.NLAT_IE && Math.abs(r.NLAT_IE) > 0.0001 ? r.NLAT_IE : null;
   const lon = r.NLONG_IE && Math.abs(r.NLONG_IE) > 0.0001 ? r.NLONG_IE : null;
   if (lat && lon) conCoord++;
-  if (r.TELEFONO) conTel++;
+  // Teléfonos: padrón web 2026 (más reciente) primero; el Censo 2025 completa lo que falte
+  const codDpto = r.CODGEO ? r.CODGEO.slice(0, 2) : null;
+  const tels = unirTelefonos([r.TELEFONO, c?.tel], codDpto);
+  const telefono = nn(r.TELEFONO) ?? c?.tel ?? null;
+  if (telefono) conTel++;
+  if (tels.telefono_fijo) conFijo++;
+  if (tels.celular) conCel++;
   const row = {
     id, cod_mod: r.COD_MOD, anexo: r.ANEXO, codinst: nn(r.CODINST), codlocal: nn(r.CODLOCAL),
     nombre: r.CEN_EDU, nombre_norm: norm(r.CEN_EDU), nivel_cod: nn(r.NIV_MOD), nivel: nn(r.D_NIV_MOD),
     forma: nn(r.D_FORMA), sexo: nn(r.D_TIPSSEXO), gestion_cod: nn(r.GESTION), gestion: nn(r.D_GESTION),
-    dependencia: nn(r.D_GES_DEP), director: nn(r.DIRECTOR), telefono: nn(r.TELEFONO), email: nn(r.EMAIL),
+    dependencia: nn(r.D_GES_DEP), director: nn(r.DIRECTOR), telefono, ...tels, email: nn(r.EMAIL),
     pagweb: nn(r.PAGWEB), direccion: nn(r.DIR_CEN), localidad: nn(r.LOCALIDAD), centro_poblado: nn(r.CEN_POB),
     codcp_inei: nn(r.CODCP_INEI), area: nn(r.DAREACENSO), ubigeo: nn(r.CODGEO),
     cod_dpto: r.CODGEO ? r.CODGEO.slice(0, 2) : null, cod_prov: r.CODGEO ? r.CODGEO.slice(0, 4) : null,
@@ -97,4 +104,4 @@ const u = fs.createWriteStream(path.join(outDir, 'ubigeo.csv'));
 u.write('ubigeo,cod_dpto,cod_prov,departamento,provincia,distrito\n');
 for (const [k, [d, p, di]] of [...ubigeo].sort()) u.write([k, k.slice(0, 2), k.slice(0, 4), d, p, di].map(esc).join(',') + '\n');
 u.end();
-console.log({ filas: n, duplicados: dup, conCenso, conCoord, conTel, ubigeos: ubigeo.size });
+console.log({ filas: n, duplicados: dup, conCenso, conCoord, conTel, conFijo, conCel, ubigeos: ubigeo.size });

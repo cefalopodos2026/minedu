@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { IIEE } from '@/lib/types';
 import { delLocal } from '@/lib/supabase';
-import { fechaPE, num, telefonos, TURNO_COLOR, TURNO_LABEL } from '@/lib/format';
+import { fechaPE, num, telefonos, TURNO_COLOR, TURNO_LABEL, waCelular } from '@/lib/format';
 
 interface Props {
   ie: IIEE;
@@ -29,6 +29,38 @@ function Seccion({ titulo, children }: { titulo: string; children: React.ReactNo
       <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{titulo}</h3>
       {children}
     </section>
+  );
+}
+
+/** Botones para llamar (y escribir por WhatsApp a los celulares) */
+function Telefonos({ lista, whatsapp }: { lista: { texto: string; marcar: string }[]; whatsapp?: boolean }) {
+  return (
+    <span className="flex flex-wrap gap-2">
+      {lista.map((t) => (
+        <span key={t.marcar} className="inline-flex gap-1">
+          <a
+            href={`tel:${t.marcar}`}
+            className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 font-medium text-emerald-800 ring-1 ring-emerald-200 hover:bg-emerald-100"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+              <path d="M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1z" />
+            </svg>
+            {t.texto}
+          </a>
+          {whatsapp && (
+            <a
+              href={waCelular(t.marcar)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center rounded-md bg-[#25D366] px-2 py-1 text-xs font-semibold text-white hover:brightness-95"
+              aria-label={`WhatsApp ${t.texto}`}
+            >
+              WhatsApp
+            </a>
+          )}
+        </span>
+      ))}
+    </span>
   );
 }
 
@@ -60,7 +92,10 @@ export default function Ficha({ ie, seleccionado, onToggleSel, onCerrar, onVerMa
     };
   }, [ie.codlocal]);
 
-  const tels = telefonos(ie.telefono);
+  const fijos = telefonos(ie.telefono_fijo);
+  const celulares = telefonos(ie.celular);
+  // texto original del padrón si no se pudo normalizar ningún número
+  const sinTelefono = fijos.length || celulares.length ? '—' : ie.telefono || 'No registrado en el padrón';
   const tieneCoord = ie.lat != null && ie.lon != null;
   const activosLocal = (local ?? []).filter((s) => s.estado === 'Activo');
   const sumaLocal = (g?: string) =>
@@ -178,28 +213,10 @@ export default function Ficha({ ie, seleccionado, onToggleSel, onCerrar, onVerMa
           <dl>
             <Fila k="Director(a)" v={ie.director} />
             <Fila
-              k="Teléfono"
-              v={
-                tels.length ? (
-                  <span className="flex flex-wrap gap-2">
-                    {tels.map((t) => (
-                      <a
-                        key={t.texto}
-                        href={`tel:${t.marcar}`}
-                        className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 font-medium text-emerald-800 ring-1 ring-emerald-200 hover:bg-emerald-100"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1z" />
-                        </svg>
-                        {t.texto}
-                      </a>
-                    ))}
-                  </span>
-                ) : (
-                  ie.telefono || 'No registrado en el padrón'
-                )
-              }
+              k="Teléfono fijo"
+              v={fijos.length ? <Telefonos lista={fijos} /> : sinTelefono}
             />
+            <Fila k="Celular" v={celulares.length ? <Telefonos lista={celulares} whatsapp /> : sinTelefono} />
             <Fila
               k="Correo"
               v={ie.email ? <a className="text-blue-700 underline" href={`mailto:${ie.email}`}>{ie.email}</a> : '—'}

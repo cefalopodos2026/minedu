@@ -31,20 +31,23 @@ export function fechaPE(iso: string | null): string {
   return `${d}/${m}/${y}`;
 }
 
-/** Separa "043-420252 / 987654321" en números marcables */
+/** Separa la lista normalizada del ETL ("043-420252 / 01-4770409") en números marcables */
 export function telefonos(t: string | null): { texto: string; marcar: string }[] {
   if (!t) return [];
-  return t
-    .split(/\s*[\/,;|]\s*|\s+-\s+|\s+y\s+/i)
-    .map((s) => s.trim())
-    .filter((s) => s.replace(/\D/g, '').length >= 6)
-    .map((s) => ({ texto: s, marcar: s.replace(/[^\d+]/g, '') }));
+  return t.split(' / ').map((s) => ({ texto: s, marcar: s.replace(/\D/g, '') }));
+}
+
+/** Enlace de WhatsApp para un celular peruano (9 dígitos) con mensaje opcional */
+export function waCelular(cel: string, texto?: string): string {
+  const q = texto ? `?text=${encodeURIComponent(texto)}` : '';
+  return `https://wa.me/51${cel.replace(/\D/g, '')}${q}`;
 }
 
 const CSV_COLS: [keyof IIEE, string][] = [
   ['cod_mod', 'Código modular'], ['anexo', 'Anexo'], ['codlocal', 'Código local'], ['nombre', 'Nombre'],
   ['nivel', 'Nivel/Modalidad'], ['forma', 'Forma'], ['gestion', 'Gestión'], ['dependencia', 'Dependencia'],
-  ['director', 'Director(a)'], ['telefono', 'Teléfono'], ['email', 'Email'], ['pagweb', 'Página web'],
+  ['director', 'Director(a)'], ['telefono_fijo', 'Teléfono fijo'], ['celular', 'Celular'],
+  ['telefono', 'Teléfono (texto original)'], ['email', 'Email'], ['pagweb', 'Página web'],
   ['direccion', 'Dirección'], ['localidad', 'Localidad'], ['centro_poblado', 'Centro poblado'], ['area', 'Área'],
   ['ubigeo', 'Ubigeo'], ['departamento', 'Departamento'], ['provincia', 'Provincia'], ['distrito', 'Distrito'],
   ['dre', 'DRE'], ['codooii', 'Código UGEL'], ['ugel', 'UGEL'], ['turno', 'Turno'], ['turno_grupo', 'Día/Noche'],
