@@ -73,6 +73,21 @@ Nota: el censo informa el alumnado **por servicio educativo**, y cada servicio t
     - pruebas en escritorio y celular;
     - Informe y README, commit, push y verificación en producción.
 
+### Pedido: estilo institucional (blanco con acento rojo y títulos en negro), según la imagen de referencia
+Se toma el **estilo** de la referencia, pero no el escudo ni la marca "gob.pe", para no hacer pasar la app por un portal oficial.
+
+27. [ ] **Cabecera de la app**:
+    - fondo blanco con una franja roja superior y emblema rojo;
+    - título en negro, subtítulo en gris;
+    - usuario y rol en negro y gris; botón "Salir" con borde rojo.
+28. [ ] **Pantalla de inicio**:
+    - banda roja superior con el nombre de la app;
+    - bloque blanco con el título grande en negro y la descripción en gris;
+    - tarjeta de acceso blanca con título negro y botón rojo;
+    - fondo gris claro y pie gris con "© 2026 APLICACIONES DONET".
+29. [ ] **Títulos en negro**: los títulos de las secciones de la ficha y de los paneles pasan de gris en mayúsculas a negro.
+30. [ ] **Verificar y publicar**: pruebas en escritorio y celular, commit, push y verificación en producción.
+
 Se hará un commit antes y después de cada tarea importante.
 
 ## Revisión
