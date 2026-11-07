@@ -21,12 +21,12 @@ El aplicativo permite **ubicar cualquier institución educativa del Perú** de d
 Para cada colegio muestra su **ficha completa**:
 
 - Identificación: código modular, código de local, nivel y gestión.
-- Contacto: **director**, **teléfono** (se puede marcar desde el celular), correo y página web.
+- Contacto: **director**, **teléfono fijo** y **celular** (se pueden marcar desde el celular; el celular también abre WhatsApp), correo y página web.
 - Ubicación: dirección, **ubigeo**, DRE y UGEL.
 - **Turno** de atención.
 - **Alumnado 2025**: total, hombres y mujeres, separado en **alumnado diurno y nocturno**. También muestra docentes y secciones.
 
-Los colegios se ubican en un **mapa interactivo**. Se pueden seleccionar varios para verlos juntos y exportar la información a Excel (CSV). La interfaz se adapta a **PC, tablet y celular**.
+Los colegios se ubican en un **mapa interactivo**. Desde la **ubicación actual del celular**, la app traza por las calles la **ruta óptima** hasta uno o varios colegios, en auto o a pie, y la abre en Google Maps para navegar paso a paso. Se pueden seleccionar varios colegios, **compartirlos por WhatsApp** y exportarlos a Excel (CSV). La interfaz se adapta a **PC, tablet y celular**.
 
 La información proviene íntegramente de fuentes **oficiales de ESCALE**:
 
@@ -35,7 +35,9 @@ La información proviene íntegramente de fuentes **oficiales de ESCALE**:
 | Servicios educativos | 180,943 |
 | Activos | 115,428 |
 | Con coordenadas | 179,642 |
-| Con teléfono | 37,802 |
+| Con teléfono | 38,628 |
+| Con teléfono fijo (normalizado con código de ciudad) | 31,194 |
+| Con celular | 9,560 |
 | Con alumnado 2025 | 112,724 |
 | Distritos | 1,892 |
 | UGEL / DRE | 248 |
@@ -107,7 +109,9 @@ Es una arquitectura **serverless y de bajo costo**: no hay un servidor propio qu
 | **Node.js 24** | Ejecución del ETL y la carga de datos |
 | **pg + pg-copy-streams** | Carga masiva con `COPY` (180 mil filas en segundos) |
 | **PGlite** (Postgres en WebAssembly) | Backend local para probar el esquema y la app sin conexión a la nube |
-| **Puppeteer-core + Microsoft Edge** | Pruebas visuales automatizadas en escritorio, tablet y celular |
+| **Puppeteer-core + Microsoft Edge** | Pruebas visuales automatizadas en escritorio, tablet y celular (incluida la ruta con GPS simulado) |
+| **OSRM sobre OpenStreetMap** (servidor público de FOSSGIS) | Rutas por calles en auto y a pie, y orden óptimo de visita (servicio `trip`) |
+| **Geolocation API del navegador** | Ubicación actual del celular o de la PC |
 
 ### 3.4 Infraestructura y herramientas
 
@@ -138,7 +142,12 @@ Es una arquitectura **serverless y de bajo costo**: no hay un servidor propio qu
    - fechas inválidas o con día y mes invertidos (por ejemplo `27-05-2008` registrado como mes 27): se corrigen o se dejan vacías;
    - bytes nulos y caracteres de control dentro de los textos: se eliminan.
 5. **Normalización de búsqueda:** el nombre se guarda en mayúsculas y sin tildes, para que "jose" encuentre "JOSÉ".
-6. **Clasificación del turno:** *Diurno* (mañana o tarde), *Nocturno* (solo noche) o *Día y noche* (por ejemplo Mañana-Tarde-Noche). Con esto se calcula el **alumnado diurno y nocturno**.
+6. **Teléfonos fijo y celular** (`scripts/telefonos.mjs`):
+   - se unen los números del padrón 2026, que tiene prioridad por ser el más reciente, con los del Censo 2025, que aportan 826 colegios más;
+   - se eliminan los duplicados;
+   - cada número se clasifica: es **celular** si tiene 9 dígitos y empieza con 9; si no, es **fijo**;
+   - a los fijos sin código de ciudad se les añade el que corresponde al departamento (por ejemplo `427545` en Áncash pasa a `043-427545`).
+7. **Clasificación del turno:** *Diurno* (mañana o tarde), *Nocturno* (solo noche) o *Día y noche* (por ejemplo Mañana-Tarde-Noche). Con esto se calcula el **alumnado diurno y nocturno**.
 
 ---
 
@@ -180,12 +189,14 @@ Los filtros disponibles son departamento, provincia, distrito, UGEL, texto o có
 | **Filtros adicionales** | Nivel/modalidad (21), gestión pública o privada, turno (diurno, nocturno, día y noche), área urbana o rural, estado activo o inactivo |
 | **Búsqueda** | Por nombre (ignora tildes y mayúsculas), código modular o código de local |
 | **Resumen** | Indicadores del filtro actual: colegios, locales, alumnos, alumnado diurno, nocturno y mixto, docentes y colegios con teléfono |
-| **Ficha del colegio** | Identificación, contacto (director, teléfono marcable, correo, web), ubicación con enlaces a Google Maps y "Cómo llegar", alumnado y docentes 2025, y servicios del mismo local con sus turnos y totales día/noche |
+| **Ficha del colegio** | Barra de acciones rápidas (Elegir, Ruta, Mapa, WhatsApp, Enlace); identificación; contacto (director, fijo y celular para llamar, WhatsApp al celular, correo, web); ubicación con enlaces a Google Maps y "Cómo llegar", alumnado y docentes 2025, y servicios del mismo local con sus turnos y totales día/noche |
 | **Mapa** | Puntos agrupados, color por turno, capas de calles o satélite, pines numerados para los seleccionados y vista de solo seleccionados |
-| **Selección múltiple** | Se conserva en el navegador; se puede exportar y ver en el mapa |
+| **Mi ubicación y ruta óptima** | GPS del celular; ruta trazada por las calles hasta uno o varios colegios (hasta 25) en el **orden óptimo de visita**; auto o a pie; tiempo y distancia total y por tramo; botón **Navegar**, que abre Google Maps |
+| **Compartir por WhatsApp** | Un colegio, los seleccionados o la ruta, con nombre, código, dirección, director, teléfonos, alumnos, enlace de ubicación y enlace de la ruta |
+| **Selección múltiple** | Se conserva en el navegador; se puede exportar, ver en el mapa, enviar por WhatsApp o usar para trazar la ruta |
 | **Exportación** | CSV compatible con Excel en español (separador `;`, con BOM UTF-8), de los resultados (hasta 20,000) o de los seleccionados |
 | **Enlaces compartibles** | Los filtros y la ficha abierta quedan en la URL |
-| **Diseño responsivo** | PC: panel lateral y mapa. Tablet y celular: pestañas Lista/Mapa y ficha a pantalla completa |
+| **Diseño responsivo** | PC: panel lateral y mapa. Tablet y celular: barra inferior Lista / Mapa / Ruta, ficha a pantalla completa y botones grandes |
 
 ---
 
@@ -223,8 +234,9 @@ Los filtros disponibles son departamento, provincia, distrito, UGEL, texto o có
 
 ## 9. Limitaciones conocidas
 
-- **Director y teléfono** son los registrados por cada IIEE en el padrón oficial. En unas 3 de cada 4 instituciones el teléfono no está registrado, y algunos datos pueden estar desactualizados; para confirmarlos se recomienda consultar a la UGEL.
+- **Director y teléfono** son los registrados por cada IIEE en el padrón oficial (corte 30-10-2026, el más reciente publicado) y en el Censo 2025. En unas 3 de cada 4 instituciones el teléfono no está registrado, y algunos datos pueden estar desactualizados; para confirmarlos se recomienda consultar a la UGEL.
 - El **alumnado** corresponde al **Censo Educativo 2025**, que es la última cifra oficial cerrada. Los servicios creados después o inactivos no tienen matrícula.
+- Las **rutas** usan el servidor público y gratuito de OSRM/OpenStreetMap. Calculan tiempos sin tráfico y a veces tardan unos segundos (la app espera hasta 30 s). Para un uso intensivo conviene un servidor de rutas propio.
 - La separación **diurno/nocturno** se basa en el turno declarado de cada servicio. Para los servicios con turno mixto (día y noche), el censo no separa cuántos alumnos asisten en cada turno, por eso se reportan aparte como "Día y noche".
 
 ---

@@ -80,7 +80,9 @@ También puede desplegar desde la terminal: `cd web && npx vercel --prod`.
 - Filtros en cascada Departamento → Provincia → Distrito, más UGEL, nivel/modalidad, gestión, turno (diurno/nocturno/día y noche), área y estado.
 - Búsqueda por nombre (sin importar tildes ni mayúsculas), por código modular o por código de local.
 - Resumen del filtro: número de colegios y locales, alumnos 2025, alumnado diurno, nocturno y mixto, docentes y colegios con teléfono.
-- Ficha completa del colegio: director, **teléfono (se puede marcar desde el celular)**, correo, web, dirección, ubigeo, UGEL, coordenadas, turno, alumnos H/M, docentes, secciones y los demás servicios del mismo local con su turno y alumnado. Incluye enlaces a Google Maps y "Cómo llegar".
+- **Ruta óptima desde mi ubicación** (GPS del celular) hasta uno o varios colegios, en auto o a pie, trazada por las calles. Muestra tiempo y distancia, y el botón *Navegar* la abre en Google Maps.
+- **Compartir por WhatsApp** un colegio, los seleccionados o la ruta.
+- Ficha completa del colegio: director, **teléfono fijo y celular** (llamar o abrir WhatsApp), correo, web, dirección, ubigeo, UGEL, coordenadas, turno, alumnos H/M, docentes, secciones y los demás servicios del mismo local con su turno y alumnado. Incluye enlaces a Google Maps y "Cómo llegar".
 - Mapa con agrupación de puntos, colores por turno y capas de calles o satélite. Los colegios **seleccionados** aparecen como pines numerados y se pueden ver solos en el mapa.
 - Selección múltiple que se conserva en el navegador. Exporta a CSV (compatible con Excel) los resultados o los seleccionados.
 - Enlaces compartibles: los filtros y la ficha abierta quedan en la URL.
