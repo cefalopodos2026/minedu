@@ -65,7 +65,7 @@ function Telefonos({ lista, whatsapp }: { lista: { texto: string; marcar: string
   return (
     <span className="flex flex-wrap gap-2">
       {lista.map((t) => (
-        <span key={t.marcar} className="inline-flex gap-1">
+        <span key={t.marcar} className="inline-flex flex-wrap gap-1">
           <a
             href={`tel:${t.marcar}`}
             className="inline-flex items-center gap-1 whitespace-nowrap rounded-md bg-emerald-50 px-2 py-1 font-medium text-emerald-800 ring-1 ring-emerald-200 hover:bg-emerald-100"
