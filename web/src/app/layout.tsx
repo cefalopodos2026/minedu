@@ -8,7 +8,7 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: 'Colegios del Perú – Directorio ESCALE MINEDU',
+  title: 'MINEDU · Colegios del Perú – APLICACIONES DONET',
   description:
     'Ubique colegios del Perú por departamento, provincia, distrito o nombre. Código modular, director, teléfono, dirección, ubigeo, UGEL, turno, alumnado y mapa. Fuente: ESCALE – MINEDU.',
 };

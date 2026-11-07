@@ -1,6 +1,7 @@
 // Capturas de prueba de la app (escritorio, tablet, celular) usando Edge instalado.
 // Uso: node screenshot.mjs <url_base> <carpeta_salida>
 import puppeteer from 'puppeteer-core';
+import { ingresar } from './ingresar.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -21,6 +22,7 @@ async function abrir(vp, url) {
   p.on('console', (m) => m.type() === 'error' && errores.push(`[${vp.width}] ${m.text()}`));
   p.on('pageerror', (e) => errores.push(`[${vp.width}] pageerror ${e.message}`));
   await p.goto(url, { waitUntil: 'networkidle0', timeout: 120000 });
+  await ingresar(p);
   await espera(2500);
   return p;
 }

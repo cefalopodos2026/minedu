@@ -8,9 +8,10 @@ const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 export const configurado = Boolean(url && key);
 
 let client: SupabaseClient | null = null;
-function sb(): SupabaseClient {
+/** Cliente único: guarda la sesión del usuario (inicio de sesión) y renueva el token automáticamente */
+export function sb(): SupabaseClient {
   if (!configurado) throw new Error('Supabase no configurado (NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY)');
-  if (!client) client = createClient(url!, key!, { auth: { persistSession: false } });
+  if (!client) client = createClient(url!, key!, { auth: { persistSession: true, autoRefreshToken: true } });
   return client;
 }
 

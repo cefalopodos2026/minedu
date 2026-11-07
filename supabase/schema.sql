@@ -97,14 +97,22 @@ create table if not exists public.ubigeo (
   distrito     text
 );
 
--- Seguridad: lectura pública, escritura solo con service_role
+-- Seguridad: SOLO usuarios que iniciaron sesión y tienen rol asignado (maestro / consulta).
+-- El rol está en app_metadata del token, que solo puede asignar el servidor (scripts/crear-usuarios.mjs):
+-- un usuario que se registrara por su cuenta no tendría rol y no vería datos.
+-- Escritura: solo service_role (no hay políticas de insert/update/delete).
 alter table public.iiee   enable row level security;
 alter table public.ubigeo enable row level security;
 drop policy if exists "lectura publica iiee" on public.iiee;
 drop policy if exists "lectura publica ubigeo" on public.ubigeo;
-create policy "lectura publica iiee"   on public.iiee   for select to anon, authenticated using (true);
-create policy "lectura publica ubigeo" on public.ubigeo for select to anon, authenticated using (true);
-grant select on public.iiee, public.ubigeo to anon, authenticated;
+drop policy if exists "lectura usuarios con rol" on public.iiee;
+drop policy if exists "lectura usuarios con rol" on public.ubigeo;
+create policy "lectura usuarios con rol" on public.iiee for select to authenticated
+  using ((select auth.jwt() -> 'app_metadata' ->> 'rol') in ('maestro', 'consulta'));
+create policy "lectura usuarios con rol" on public.ubigeo for select to authenticated
+  using ((select auth.jwt() -> 'app_metadata' ->> 'rol') in ('maestro', 'consulta'));
+revoke all on public.iiee, public.ubigeo from anon;
+grant select on public.iiee, public.ubigeo to authenticated;
 
 -- ---------------------------------------------------------------------
 -- Filtro común. p_q: texto ya normalizado (mayúsculas sin tildes) o código
@@ -212,4 +220,7 @@ as $$
   ) p;
 $$;
 
-grant execute on function public.filtrar_iiee, public.buscar_iiee, public.resumen_iiee, public.puntos_iiee to anon, authenticated;
+-- Las funciones nacen ejecutables por PUBLIC/anon (privilegios por defecto): se restringen a usuarios autenticados.
+-- Además, dentro de ellas rige la RLS de la tabla (security invoker), que exige el rol.
+revoke execute on function public.filtrar_iiee, public.buscar_iiee, public.resumen_iiee, public.puntos_iiee from public, anon;
+grant execute on function public.filtrar_iiee, public.buscar_iiee, public.resumen_iiee, public.puntos_iiee to authenticated;

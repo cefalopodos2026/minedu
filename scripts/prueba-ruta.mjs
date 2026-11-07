@@ -1,6 +1,7 @@
 // Prueba automatizada (celular): ubicación, ruta óptima, modo a pie, WhatsApp y ficha con teléfonos.
 // Uso: node prueba-ruta.mjs <url_base> <carpeta_capturas>
 import puppeteer from 'puppeteer-core';
+import { ingresar } from './ingresar.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -29,6 +30,7 @@ await p.evaluateOnNewDocument(() => {
   };
 });
 await p.goto(`${base}/?dpto=15&prov=1501&dist=150132&q=jesus`, { waitUntil: 'networkidle0', timeout: 120000 });
+await ingresar(p);
 await espera(2000);
 
 // 1) marcar 3 colegios y pedir la ruta desde la barra inferior
@@ -71,6 +73,7 @@ await p.screenshot({ path: path.join(out, 'r3_ficha.png') });
 
 // 6) ficha de un colegio con fijo y celular (SAN JOSE DE BETANCOURT, 1507458)
 await p.goto(`${base}/?ie=1507458-0`, { waitUntil: 'networkidle0' });
+await ingresar(p);
 await espera(2500);
 await p.screenshot({ path: path.join(out, 'r4_ficha_telefonos.png') });
 const telefonos = await p.evaluate(() =>

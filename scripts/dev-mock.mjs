@@ -19,7 +19,11 @@ if (nueva) {
   await db.exec(`do $$ begin
     if not exists (select 1 from pg_roles where rolname='anon') then create role anon; end if;
     if not exists (select 1 from pg_roles where rolname='authenticated') then create role authenticated; end if;
-  end $$;`);
+  end $$;
+  -- auth.jwt() simulado (en Supabase lo provee el servicio de Auth); el mock consulta como dueño y no aplica RLS
+  create schema if not exists auth;
+  create or replace function auth.jwt() returns jsonb language sql stable
+    as $f$ select '{"app_metadata":{"rol":"maestro"}}'::jsonb $f$;`);
   await db.exec(fs.readFileSync(path.join(here, '../supabase/schema.sql'), 'utf8'));
   for (const t of ['ubigeo', 'iiee']) {
     const csv = fs.readFileSync(path.join(here, `../data/out/${t}.csv`));
@@ -34,6 +38,18 @@ if (nueva) {
 }
 const { rows } = await db.query('select count(*)::int n from iiee');
 console.log('iiee:', rows[0].n, 'filas');
+
+// Usuarios de prueba: los mismos del ../.env (APP_USUARIO_* / APP_CLAVE_*)
+const envApp = fs.existsSync(path.join(here, '../.env'))
+  ? Object.fromEntries(
+      fs.readFileSync(path.join(here, '../.env'), 'utf8').split(/\r?\n/).filter((l) => /^APP_[A-Z_]+=/.test(l))
+        .map((l) => l.split('=')),
+    )
+  : {};
+const USUARIOS = {
+  [`${envApp.APP_USUARIO_MAESTRO}@usuarios.donet.local`]: { clave: envApp.APP_CLAVE_MAESTRO, rol: 'maestro', usuario: envApp.APP_USUARIO_MAESTRO },
+  [`${envApp.APP_USUARIO_CONSULTA}@usuarios.donet.local`]: { clave: envApp.APP_CLAVE_CONSULTA, rol: 'consulta', usuario: envApp.APP_USUARIO_CONSULTA },
+};
 
 const JSON_FN = new Set(['resumen_iiee', 'puntos_iiee']);
 const SETOF_FN = new Set(['buscar_iiee']);
@@ -54,6 +70,26 @@ http
     const url = new URL(req.url, 'http://x');
     const t0 = Date.now();
     try {
+      // Inicio de sesión simulado (supabase-js: POST /auth/v1/token?grant_type=password)
+      if (url.pathname === '/auth/v1/token' && req.method === 'POST') {
+        let raw = '';
+        for await (const c of req) raw += c;
+        const { email, password } = JSON.parse(raw || '{}');
+        const u = USUARIOS[email];
+        if (!u || !u.clave || u.clave !== password) {
+          return send(res, 400, { error: 'invalid_grant', error_description: 'Invalid login credentials', code: 'invalid_credentials', msg: 'Invalid login credentials' });
+        }
+        const user = {
+          id: `00000000-0000-0000-0000-00000000000${u.rol === 'maestro' ? 1 : 2}`, aud: 'authenticated', role: 'authenticated',
+          email, app_metadata: { rol: u.rol }, user_metadata: { usuario: u.usuario }, created_at: new Date().toISOString(),
+        };
+        return send(res, 200, {
+          access_token: 'mock-token', token_type: 'bearer', expires_in: 3600,
+          expires_at: Math.floor(Date.now() / 1000) + 3600, refresh_token: 'mock-refresh', user,
+        });
+      }
+      if (url.pathname === '/auth/v1/logout') return send(res, 204, null);
+
       const m = url.pathname.match(/^\/rest\/v1\/rpc\/(\w+)$/);
       if (m && req.method === 'POST') {
         const fn = m[1];

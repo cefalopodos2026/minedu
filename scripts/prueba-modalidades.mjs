@@ -1,6 +1,7 @@
 // Prueba: filtro por modalidad/nivel, resumen por turno y modalidad, lista con códigos y dirección exacta,
 // y ficha con alumnado del local por turno. Uso: node prueba-modalidades.mjs <url_base> <carpeta_capturas>
 import puppeteer from 'puppeteer-core';
+import { ingresar } from './ingresar.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -19,6 +20,7 @@ async function abrir(vp, url) {
   p.on('console', (m) => m.type() === 'error' && errores.push(m.text()));
   await p.setViewport(vp);
   await p.goto(url, { waitUntil: 'networkidle0', timeout: 120000 });
+  await ingresar(p);
   await espera(2500);
   return p;
 }

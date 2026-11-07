@@ -18,6 +18,7 @@ import {
 } from '@/lib/geo';
 import { aCSV, descargar, direccionExacta, num, TURNO_COLOR, TURNO_LABEL } from '@/lib/format';
 import Ficha from './Ficha';
+import { ROL_LABEL, type Usuario } from '@/lib/auth';
 import RutaPanel from './RutaPanel';
 import { calcularRuta, MAX_PARADAS, miUbicacion, type Coord, type Modo, type Ruta } from '@/lib/ruta';
 import { abrirWhatsApp, textoWhatsApp } from '@/lib/compartir';
@@ -200,7 +201,7 @@ function Kpi({ label, valor, color }: { label: string; valor: string; color?: st
 }
 
 /* ------------------------------------------------------------------ */
-export default function App() {
+export default function App({ usuario, onSalir }: { usuario: Usuario | null; onSalir: () => void }) {
   // Estado inicial desde la URL (enlaces compartibles) y localStorage (selección guardada).
   // App se renderiza solo en el navegador (ver ClientApp), así que es seguro leer window aquí.
   const [filtros, setFiltros] = useState<Filtros>(() => {
@@ -488,12 +489,27 @@ export default function App() {
         <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
           <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zm-7 9.18v4L12 20l7-3.82v-4L12 16l-7-3.82z" />
         </svg>
-        <div className="min-w-0">
-          <h1 className="truncate text-base font-bold leading-tight sm:text-lg">Colegios del Perú</h1>
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-base font-bold leading-tight sm:text-lg">MINEDU · Colegios del Perú</h1>
           <p className="truncate text-[11px] text-red-100">
-            Directorio oficial ESCALE – MINEDU · Padrón oct-2026 · Censo Educativo 2025
+            Datos oficiales ESCALE · Padrón oct-2026 · Censo 2025 · <b className="text-white">APLICACIONES DONET</b>
           </p>
         </div>
+        {usuario && (
+          <div className="flex shrink-0 items-center gap-2">
+            <div className="hidden text-right leading-tight sm:block">
+              <div className="text-sm font-semibold">👤 {usuario.usuario}</div>
+              <div className="text-[11px] text-red-100">{usuario.rol ? ROL_LABEL[usuario.rol] : 'Sin rol asignado'}</div>
+            </div>
+            <button
+              onClick={onSalir}
+              title={`Cerrar sesión de ${usuario.usuario}`}
+              className="rounded-lg bg-white/15 px-3 py-1.5 text-sm font-semibold ring-1 ring-white/30 hover:bg-white/25"
+            >
+              Salir
+            </button>
+          </div>
+        )}
       </header>
 
       <div className="relative flex min-h-0 flex-1 flex-col pb-[calc(3rem+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-[440px_1fr] lg:pb-0">
