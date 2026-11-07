@@ -59,7 +59,7 @@ Nota: el censo informa el alumnado **por servicio educativo**, y cada servicio t
     - el script `scripts/crear-usuarios.mjs` crea o actualiza los usuarios con la clave de servicio;
     - el rol (`maestro` / `consulta`) se guarda en `app_metadata`, que solo puede asignar el servidor;
     - el nombre de usuario se convierte en un correo interno (`usuario@usuarios.donet.local`).
-23. [ ] **Base protegida**:
+23. [x] **Base protegida**:
     - RLS y permisos de las funciones solo para usuarios **autenticados con rol** (se quita el acceso anónimo);
     - si alguien se registrara por su cuenta, no vería datos, porque no tendría rol.
 24. [x] **Pantalla de inicio**:
@@ -68,7 +68,7 @@ Nota: el censo informa el alumnado **por servicio educativo**, y cada servicio t
     - pie "© 2026 APLICACIONES DONET – Soluciones Empresariales";
     - la sesión se mantiene al recargar; en la cabecera aparecen el usuario, el rol y el botón "Salir".
 25. [x] **Backend local de pruebas** (`dev-mock.mjs`): inicio de sesión simulado y `auth.jwt()` simulado, para seguir probando sin la nube.
-26. [ ] **Publicar**:
+26. [x] **Publicar**:
     - aplicar el esquema en Supabase, crear los usuarios y verificar que **sin sesión no hay datos** y que con cada usuario sí los hay;
     - pruebas en escritorio y celular;
     - Informe y README, commit, push y verificación en producción.
@@ -110,7 +110,25 @@ Se hará un commit antes y después de cada tarea importante.
 - **Autor de git incorrecto** (`pecepeperu2026-ops`, de la configuración global): se fijó `cefalopodos2026` en el repositorio y se corrigieron los commits aún no subidos.
 - **Botón de WhatsApp desbordado en la ficha del celular**: ahora pasa a la línea siguiente.
 
+### Revisión de las tareas 15 a 26 (modalidades y login)
+- **Modalidades**: columnas `modalidad` y `subnivel` derivadas del código oficial `NIV_MOD`; los 180,943 servicios quedan clasificados.
+  - Filtros Modalidad → Nivel/ciclo.
+  - La lista muestra la modalidad, la **dirección exacta**, el **código modular** y el **código de local**.
+- **Alumnado por turno**: el resumen incluye tablas por cada turno y por modalidad (se verificó que la suma por turnos coincide con el total). La ficha muestra el alumnado del local por turno.
+- **Login** con Supabase Auth: usuario maestro `donet` y usuario de consulta `prueba`.
+  - Las contraseñas están solo en `.env`.
+  - La base responde solo a usuarios con rol: sin sesión, permiso denegado; un usuario sin rol ve 0 registros (probado en producción).
+- **Marca**: pantalla de inicio con colores institucionales y "© 2026 APLICACIONES DONET – Soluciones Empresariales". No se copió el logotipo oficial del Ministerio.
+- **Problemas encontrados y su causa raíz**:
+  - `create table if not exists` no agregaba columnas a la tabla ya existente en Supabase: se resolvió con `alter table ... add column if not exists`.
+  - Fecha ISO completa en el backend de prueba: `fechaPE` acepta ambos formatos.
+  - Tabla de servicios del local más ancha que el celular.
+  - En las pruebas: selector ambiguo del panel de ruta, y borrado de campos que en React o en modo táctil no funcionaba.
+- **Publicación segura**: primero se desplegó la app con login (la base aún aceptaba a los autenticados) y después se cerró el acceso anónimo. Así no hubo corte de servicio.
+
 ### Pendientes y observaciones
 - Los 2 primeros commits, que ya estaban en GitHub, conservan el autor `pecepeperu2026-ops`. Cambiarlos requiere reescribir el historial remoto (*force push*), que solo se hará si el usuario lo pide.
+- Hoy los roles **maestro** y **consulta** tienen el mismo acceso de lectura (la app no tiene funciones de edición). Si se desea, se puede reservar funciones al maestro, por ejemplo exportar CSV o administrar usuarios.
+- Para usar el logotipo oficial del MINEDU se necesita autorización. Con ella, basta con poner el archivo en `web/public/`.
 - Las rutas usan el servidor público y gratuito de OSRM. Para un uso masivo conviene uno propio.
 - Para actualizar los datos cuando ESCALE publique un nuevo padrón: `npm run etl` y `npm run load` en `scripts/`.

@@ -79,6 +79,22 @@ Para probar sin Supabase: `cd scripts && node dev-mock.mjs` levanta un backend l
 
 También puede desplegar desde la terminal: `cd web && npx vercel --prod`.
 
+## 5. Usuarios e inicio de sesión
+
+El aplicativo exige iniciar sesión (Supabase Auth). Hay un usuario **maestro** y un usuario de **consulta**.
+
+1. En el archivo `.env` de la raíz (nunca se sube a git) defina:
+   ```
+   APP_USUARIO_MAESTRO=...
+   APP_CLAVE_MAESTRO=...
+   APP_USUARIO_CONSULTA=...
+   APP_CLAVE_CONSULTA=...
+   ```
+2. Obtenga las claves de Supabase con `cd web && npx vercel env pull ../.env.supabase --environment production`.
+3. Cree o actualice los usuarios con `cd scripts && node crear-usuarios.mjs`. El mismo comando sirve para **cambiar contraseñas**.
+
+La base solo responde a usuarios autenticados con rol. Para aplicar cambios del esquema **sin recargar los datos**, use `SOLO_ESQUEMA=1` con `npm run load`.
+
 ## Funcionalidades
 
 - Filtros en cascada Departamento → Provincia → Distrito, más UGEL, gestión, turno (diurno/nocturno/día y noche), área y estado.

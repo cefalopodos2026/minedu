@@ -33,6 +33,12 @@ async function viaPg(url) {
   await client.connect();
   console.log('Creando esquema...');
   await client.query(fs.readFileSync(SCHEMA, 'utf8'));
+  if (process.env.SOLO_ESQUEMA) {
+    // aplica cambios de seguridad/funciones sin vaciar ni recargar los datos
+    console.log('Esquema aplicado (SOLO_ESQUEMA): datos sin cambios.');
+    await client.end();
+    return;
+  }
   for (const t of ['ubigeo', 'iiee']) {
     await client.query(`truncate public.${t}`);
     const header = fs.readFileSync(path.join(OUT, `${t}.csv`), 'utf8').split('\n', 1)[0];

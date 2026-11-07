@@ -188,8 +188,21 @@ Los filtros disponibles son departamento, provincia, distrito, UGEL, texto o có
 
 ### 5.4 Seguridad
 
-- **Row Level Security** activado. El rol público (`anon`) solo tiene permiso de **lectura** y no puede insertar, modificar ni borrar.
-- La clave de servicio y la cadena de conexión **nunca** llegan al navegador ni al repositorio: están en `.env`, que git ignora.
+- **Inicio de sesión obligatorio** con **Supabase Auth**. Las contraseñas se guardan cifradas en Supabase, nunca en el código ni en el repositorio. Hay dos usuarios:
+
+  | Usuario | Rol | Uso |
+  |---|---|---|
+  | `donet` | **maestro** | Usuario principal del aplicativo |
+  | `prueba` | **consulta** | Usuario de consulta |
+
+  Las contraseñas están solo en `.env`, que git ignora, y se cargan con `scripts/crear-usuarios.mjs`. El nombre de usuario se convierte en un correo interno (`usuario@usuarios.donet.local`).
+- **El rol va dentro del token firmado** (`app_metadata.rol`). Solo el servidor puede asignarlo con la clave de servicio; el usuario no puede modificarlo.
+- **Row Level Security:** la tabla y las funciones responden **solo** a usuarios autenticados cuyo rol sea `maestro` o `consulta`.
+  - **Sin sesión**, la clave pública recibe *permiso denegado* (42501).
+  - Un usuario que se registrara por su cuenta **no tendría rol** y vería 0 registros. Se probó en producción con un usuario temporal, que luego se eliminó.
+  - Nadie puede insertar, modificar ni borrar con la clave pública.
+- La clave de servicio y la cadena de conexión **nunca** llegan al navegador ni al repositorio: están en `.env` y `.env.supabase`, que git ignora.
+- **Marca:** la pantalla de inicio usa colores institucionales y el texto "MINEDU – datos oficiales ESCALE" como fuente. El emblema es propio (birrete) y **no** reproduce el logotipo oficial del Ministerio, cuyo uso requiere autorización. El pie dice "© 2026 APLICACIONES DONET – Soluciones Empresariales".
 
 ---
 
@@ -211,6 +224,7 @@ Los filtros disponibles son departamento, provincia, distrito, UGEL, texto o có
 | **Selección múltiple** | Se conserva en el navegador; se puede exportar, ver en el mapa, enviar por WhatsApp o usar para trazar la ruta |
 | **Exportación** | CSV compatible con Excel en español (separador `;`, con BOM UTF-8), de los resultados (hasta 20,000) o de los seleccionados |
 | **Enlaces compartibles** | Los filtros y la ficha abierta quedan en la URL |
+| **Inicio de sesión** | Pantalla de inicio con usuario y contraseña (mostrar u ocultar); la sesión se mantiene al recargar; en la cabecera aparecen el usuario, el rol (Usuario maestro / Consulta) y el botón **Salir** |
 | **Diseño responsivo** | PC: panel lateral y mapa. Tablet y celular: barra inferior Lista / Mapa / Ruta, ficha a pantalla completa y botones grandes |
 
 ---

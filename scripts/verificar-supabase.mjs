@@ -1,16 +1,36 @@
-// Verifica la base publicada en Supabase usando SOLO la clave pública (anon), igual que el navegador.
+// Verifica la base publicada en Supabase con la clave pública (anon), igual que el navegador:
+//  1) SIN sesión no se puede leer nada;  2) con el usuario de CONSULTA se lee todo pero no se puede escribir.
 // Uso: node verificar-supabase.mjs <archivo .env con NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY>
+// (las credenciales del usuario de consulta se leen de ../.env)
 import fs from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
+import { CREDENCIALES } from './ingresar.mjs';
 
 const env = Object.fromEntries(
   fs.readFileSync(process.argv[2], 'utf8').split(/\r?\n/).filter((l) => /^[A-Z_]+=/.test(l))
     .map((l) => { const i = l.indexOf('='); return [l.slice(0, i), l.slice(i + 1).replace(/^"|"$/g, '')]; }),
 );
-const sb = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
+const nuevo = () => createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
 let fallos = 0;
 const ok = (cond, msg) => { console.log(`${cond ? 'OK   ' : 'FALLA'} ${msg}`); if (!cond) fallos++; };
 const t = async (fn) => { const t0 = Date.now(); const r = await fn(); return [r, Date.now() - t0]; };
+
+// 1) Sin sesión: todo bloqueado
+const anon = nuevo();
+const a1 = await anon.rpc('resumen_iiee', { p_estado: 'Activo' });
+ok(!!a1.error, `sin sesión: resumen bloqueado (${a1.error?.code ?? 'devolvió datos!'})`);
+const a2 = await anon.rpc('buscar_iiee', { p_q: 'SAN JOSE', p_limit: 1 });
+ok(!!a2.error || (a2.data ?? []).length === 0, `sin sesión: búsqueda bloqueada (${a2.error?.code ?? 'sin filas'})`);
+const a3 = await anon.from('iiee').select('id').limit(1);
+ok(!!a3.error || (a3.data ?? []).length === 0, `sin sesión: lectura directa de la tabla bloqueada (${a3.error?.code ?? 'sin filas'})`);
+
+// 2) Con sesión del usuario de consulta
+const sb = nuevo();
+const ses = await sb.auth.signInWithPassword({
+  email: `${CREDENCIALES.consulta[0]}@usuarios.donet.local`,
+  password: CREDENCIALES.consulta[1],
+});
+ok(!ses.error, `inicio de sesión del usuario de consulta (${ses.error?.message ?? 'rol ' + ses.data.user?.app_metadata?.rol})`);
 
 // Lectura
 const [res, ms1] = await t(() => sb.rpc('resumen_iiee', { p_estado: 'Activo' }));
